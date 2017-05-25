@@ -60,7 +60,7 @@ class Order extends Model
     /**
      * @return OrderWorkflow
      */
-    public function currentWorkflow(): OrderWorkflow
+    public function currentOrderWorkflow(): OrderWorkflow
     {
         return $this->orderWorkflows()->latest()->first();
     }

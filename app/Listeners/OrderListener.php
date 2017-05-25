@@ -9,15 +9,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 class OrderListener
 {
-    /**
-     * Create the event listener.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        //
-    }
 
     /**
      * Handle the event.
@@ -28,7 +19,7 @@ class OrderListener
     public function handle(OrderCreated $event)
     {
         \Log::info('Caught Event');
-        $workflow = $event->order->currentWorkflow();
-        $workflow->setNextApprover(User::find(8));
+        $orderWorkflow = $event->order->currentOrderWorkflow();
+        $orderWorkflow->setNextApprover(User::find(8));
     }
 }

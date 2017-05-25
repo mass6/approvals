@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Class OrderWorkflow
  * @package App
+ * @property integer $next_approver
+ * @property-read \App\User $nextApprover
  */
 class OrderWorkflow extends Model
 {
@@ -20,8 +22,7 @@ class OrderWorkflow extends Model
      * @var array
      */
     protected $guarded = [];
-
-
+    
     /**
      * @param User $user
      */
@@ -34,6 +35,9 @@ class OrderWorkflow extends Model
         }
     }
 
+    /**
+     * @return mixed
+     */
     public function getNextApprover()
     {
         return $this->nextApprover;

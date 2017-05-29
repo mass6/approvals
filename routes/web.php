@@ -1,18 +1,16 @@
 <?php
 
+use App\Order;
 use App\Workflow;
 
 Route::get('test', function () {
 
-    $w = Workflow::find(3);
-    dd($w);
+    /** @var Order $order */
+    $order = Order::getFiniteModel(1);
+    // $order->configureStateMachine();
 
-
-
-
-    $order = \App\Order::find(1);
     $sm = $order->getStateMachine();
-
+    dd($sm);
     $config = $order->getWorkflow()->getConfig();
 
 

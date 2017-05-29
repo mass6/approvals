@@ -83,4 +83,36 @@ class Workflow extends Model
     {
         return $this->belongsTo(User::class, 'next_approver');
     }
+
+
+    /**
+     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function approvals()
+    {
+        return $this->hasMany(Approval::class);
+    }
+
+
+    /**
+     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
+     *
+     * @param \Finite\Event\TransitionEvent $transitionEvent
+     * @param User                          $user
+     * @return Model
+     */
+    public function saveApproval(\Finite\Event\TransitionEvent $transitionEvent, User $user)
+    {
+        $rule = str_replace('approve.', '', $transitionEvent->getTransition()->getName());
+
+        return $this->approvals()->create([
+            'user_id'  => $user->id,
+            'rule'     => $rule,
+            'approved' => true,
+        ]);
+    }
+
+
 }

@@ -41,15 +41,19 @@ class OrderStateConfig
                 'APR' => [
                     'type' => 'final',
                     'properties' => ['name' => 'approved'],
+                ],
+                'CAN' => [
+                    'type' => 'final',
+                    'properties' => ['name' => 'cancelled'],
                 ]
             ],
             'transitions' => [
                 'submit' => ['from' => ['DRA'], 'to' => 'PND', 'properties' => []],
-                'approve' => ['from' => ['PND', 'APR'], 'to' => 'APR', 'properties' => []],
+                'cancel' => ['from' => ['DRA', 'PND', 'APR'], 'to' => 'CAN', 'properties' => []],
             ],
             'callbacks' => [
-                'before' => [
-                    ['on' => 'approve', 'do' => [$this->model, 'beforeApprove']],
+                'after' => [
+                    ['on' => 'approve.*', 'do' => [$this->model, 'afterApprove']],
                     //['from' => 's2', 'to' => 's3', 'do' => function ($myStatefulInstance, $transitionEvent) {
                     //    echo "Before callback from 's2' to 's3'";// debug
                     //}],

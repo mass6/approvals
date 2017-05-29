@@ -35,16 +35,23 @@ trait FiniteStateMachineTrait
     /**
      * @return array
      */
-    protected abstract function stateMachineConfig();
+    protected abstract function getStateMachineConfig();
+    public function getStateMachineConfigFactory()
+    {
+        return $this->stateMachineConfigFactory;
+    }
 
     /**
      * @param array|null $config
      */
     protected function initStateMachine(array $config = null)
     {
-        $configFactory = new StateMachineConfigFactory($this);
-        $this->stateMachine = $configFactory->getStateMachine();
-        $this->configFactory = $configFactory;
+        $this->finiteLoader = $config ?: $this->getStateMachineConfig();
+        $loader = new \Finite\Loader\ArrayLoader($this->finiteLoader);
+        $sm = new StateMachine($this);
+        $loader->load($sm);
+        $sm->initialize();
+        $this->stateMachine = $sm;
     }
 
     /**

@@ -5,6 +5,9 @@ namespace App;
 use Finite\State\State;
 use Finite\State\StateInterface;
 use Finite\StateMachine\StateMachine;
+use Finite\Transition\Transition;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class StateMachineConfigFactory
 {
@@ -26,7 +29,65 @@ class StateMachineConfigFactory
     public function __construct($model)
     {
         $this->model = $model;
-        $this->sm = new StateMachine($model);
+    }
+
+    // public function initializeStateMachine()
+    // {
+    //     $sm = new StateMachine($this->model);
+    //     $this->configureStateMachine($sm);
+    //     $this->sm = $sm;
+    // }
+
+    public function getStateMachine()
+    {
+        return $this->sm;
+    }
+
+    public function configureTransitions(StateMachine $sm)
+    {
+        $config = $this->model->getWorkflow()->getConfig();
+        $levels = collect($config['levels']);
+        \Log::info($levels);
+        $approvals = $this->model->getWorkflow()->approvals;
+        if ($approvals) {
+            $max = $approvals->max('rule');
+            \Log::info($max);
+        }
+
+
+
+
+
+        // dd($levels);
+        // $sm = $this->sm;
+        // $resolver = new OptionsResolver();
+        // $resolver->setAllowedValues('properties',['user']);
+        // $transition = new Transition('approve.level_1.1', 'PND', 'PND', null, $resolver);
+        // $sm->addTransition($transition);
+        $sm->addTransition('approve.level_1.1', 'PND', 'PND');
+        $sm->getDispatcher()->addListener('finite.post_transition.approve.level_1.1', function(\Finite\Event\TransitionEvent $e) {
+            $this->afterApprove($e);
+        });
+        $sm->addTransition('approve.level_2.1', 'PND', 'PND');
+        $sm->getDispatcher()->addListener('finite.post_transition.approve.level_2.1', function(\Finite\Event\TransitionEvent $e) {
+            $this->afterApprove($e);
+        });
+        $sm->addTransition('approve.level_2.2', 'PND', 'PND');
+        $sm->getDispatcher()->addListener('finite.post_transition.approve.level_2.2', function(\Finite\Event\TransitionEvent $e) {
+            $this->afterApprove($e);
+        });
+        $sm->addTransition('approve.level_3.1', 'PND', 'PND');
+        $sm->getDispatcher()->addListener('finite.post_transition.approve.level_3.1', function(\Finite\Event\TransitionEvent $e) {
+            $this->afterApprove($e);
+        });
+        $sm->addTransition('approve.level_3.2', 'PND', 'APR');
+
+        return $sm;
+    }
+
+    protected function afterApprove(\Finite\Event\TransitionEvent $event)
+    {
+        $this->model->afterApprove($event);
     }
 
     public function getConfig()
@@ -39,7 +100,7 @@ class StateMachineConfigFactory
     /**
      *
      */
-    public function getStateMachine()
+    public function setStateMachine()
     {
         $sm = $this->sm;
 

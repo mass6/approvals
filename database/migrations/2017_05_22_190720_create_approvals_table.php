@@ -15,11 +15,11 @@ class CreateApprovalsTable extends Migration
     {
         Schema::create('approvals', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('order_workflow_id');
-            $table->string('rule');
+            $table->unsignedInteger('workflow_id');
+            $table->text('rule');
             $table->unsignedInteger('user_id');
             $table->boolean('approved');
-            $table->text('comment');
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }

@@ -3,8 +3,8 @@
 namespace App;
 
 use App\Events\OrderCreated;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 use Venturecraft\Revisionable\RevisionableTrait;
 
 /**
@@ -48,6 +48,10 @@ class Order extends Model
      * @var RequisitionStateMachineConfig
      */
     protected $stateMachineConfig;
+    /**
+     * @var StateMachineConfigFactory
+     */
+    protected $stateMachineConfigFactory;
 
     /**
      * Requisition constructor.
@@ -57,8 +61,9 @@ class Order extends Model
     public function __construct($attributes = [])
     {
         parent::__construct($attributes);
+        $this->stateMachineConfig = new OrderStateConfig($this);
+        $this->stateMachineConfigFactory = new StateMachineConfigFactory($this);
         $this->initStateMachine();
-        //$this->stateMachineConfig = new OrderStateConfig($this);
         $this->initAuditTrail([
             'auditTrailClass' => TransitionEvent::class,
             'storeAuditTrailOnFirstAfterCallback' => false,
@@ -79,6 +84,35 @@ class Order extends Model
         static::created(function ($model) {
             $model->createOrderWorkflow();
         });
+    }
+
+
+    /**
+     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
+     *
+     * @param $id
+     * @return mixed
+     */
+    public static function getFiniteModel($id)
+    {
+        $model = static::where('id', $id)->first();
+        if ($model) {
+            return $model->configureStateMachine();
+        }
+        return $model;
+    }
+
+
+    /**
+     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
+     *
+     * @return $this
+     */
+    protected function configureStateMachine()
+    {
+        $this->getStateMachineConfigFactory()->configureTransitions($this->stateMachine);
+
+        return $this;
     }
 
     /**
@@ -120,7 +154,7 @@ class Order extends Model
     /**
      * @return array
      */
-    protected function stateMachineConfig()
+    protected function getStateMachineConfig()
     {
         return $this->stateMachineConfig->getStateMachineConfig();
     }
@@ -134,6 +168,19 @@ class Order extends Model
     public function beforeApprove($requisition, $transitionEvent)
     {
         return false;
+    }
+
+    /**
+     * @param $transitionEvent
+     *
+     * @return bool
+     */
+    public function afterApprove(\Finite\Event\TransitionEvent  $transitionEvent)
+    {
+        // \Log::info('After Approved Callback');
+        \Log::info($transitionEvent->getTransition()->getName());
+
+        $this->getWorkflow()->saveApproval($transitionEvent, Auth::user());
     }
 
     /**

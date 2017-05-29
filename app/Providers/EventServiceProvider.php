@@ -16,6 +16,9 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\OrderCreated' => [
             'App\Listeners\OrderListener',
         ],
+        'finite.test_transition' => [
+            'App\Listeners\StateMachineListener'
+        ]
     ];
 
     /**

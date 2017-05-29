@@ -7,19 +7,16 @@ use App\User;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class OrderListener
+class StateMachineListener
 {
 
     /**
      * Handle the event.
      *
-     * @param  OrderCreated  $event
      * @return void
      */
-    public function handle(OrderCreated $event)
+    public function handle()
     {
-        \Log::info('Caught Event');
-        $workflow = $event->order->getWorkflow();
-        $workflow->setNextApprover(User::find(8));
+        \Log::info('State Machine Listener');
     }
 }

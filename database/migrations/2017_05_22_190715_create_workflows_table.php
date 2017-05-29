@@ -15,8 +15,10 @@ class CreateWorkflowsTable extends Migration
     {
         Schema::create('workflows', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name');
+            $table->unsignedInteger('order_id');
+            $table->unsignedInteger('workflow_definition_id');
             $table->text('config');
+            $table->unsignedInteger('next_approver')->nullable();
             $table->timestamps();
         });
     }

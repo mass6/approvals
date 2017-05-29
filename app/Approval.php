@@ -29,6 +29,6 @@ class Approval extends Model
      */
     public function orderWorkflow()
     {
-        return $this->belongsTo(OrderWorkflow::class);
+        return $this->belongsTo(Workflow::class);
     }
 }

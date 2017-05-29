@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateOrderWorkflowsTable extends Migration
+class CreateWorkflowDefinitionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,10 @@ class CreateOrderWorkflowsTable extends Migration
      */
     public function up()
     {
-        Schema::create('order_workflows', function (Blueprint $table) {
+        Schema::create('workflow_definitions', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('order_id');
-            $table->unsignedInteger('workflow_id');
-            $table->unsignedInteger('next_approver')->nullable();
+            $table->string('name');
+            $table->text('config');
             $table->timestamps();
         });
     }
@@ -29,6 +28,6 @@ class CreateOrderWorkflowsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('order_workflows');
+        Schema::dropIfExists('workflow_definitions');
     }
 }

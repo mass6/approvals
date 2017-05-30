@@ -2,23 +2,26 @@
 
 namespace app;
 
-class OrderStateConfig
+/**
+ * Class OrderStateMachineConfig
+ * @package app
+ */
+class OrderStateMachineConfig
 {
 
     /**
-     * @var Requisition
+     * @var
      */
-    private $requisition;
+    private $model;
 
+    /**
+     * OrderStateMachineConfig constructor.
+     * @param $model
+     */
     public function __construct($model)
     {
         $this->model = $model;
     }
-
-    //public function setConfig()
-    //{
-    //
-    //}
 
     /**
      * Return the state machine configuration
@@ -53,15 +56,9 @@ class OrderStateConfig
             ],
             'callbacks' => [
                 'after' => [
-                    ['on' => 'approve.*', 'do' => [$this->model, 'afterApprove']],
-                    //['from' => 's2', 'to' => 's3', 'do' => function ($myStatefulInstance, $transitionEvent) {
-                    //    echo "Before callback from 's2' to 's3'";// debug
-                    //}],
-                    //['from' => '-s3', 'to' => ['s3' ,'s1'], 'do' => [$this, 'fromStatesS1S2ToS1S3']],
+                    ['on' => 'submit', 'do' => [$this->model, 'afterSubmit']],
+                    ['from' => '', 'to' => 'APR', 'do' => [$this->model, 'afterFinalApproval']],
                 ],
-                //'after' => [
-                //    ['from' => 'all', 'to' => 'all', 'do' => [$this, 'afterAllTransitions']],
-                //],
             ],
         ];
     }

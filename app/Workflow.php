@@ -105,7 +105,7 @@ class Workflow extends Model
      */
     public function saveApproval(\Finite\Event\TransitionEvent $transitionEvent, User $user)
     {
-        $rule = str_replace('approve.', '', $transitionEvent->getTransition()->getName());
+        $rule = $transitionEvent->getTransition()->getName();
 
         return $this->approvals()->create([
             'user_id'  => $user->id,

@@ -19,6 +19,6 @@ class DatabaseSeeder extends Seeder
          factory(WorkflowDefinition::class, 1)->create(['name' => 'basic']);
          factory(WorkflowDefinition::class, 1)->create(['name' => 'standard']);
          factory(WorkflowDefinition::class, 1)->create(['name' => 'staged']);
-         factory(Order::class, 3)->create(['user_id' => $user->id]);
+         factory(Order::class, 10)->create(['user_id' => $user->id]);
     }
 }

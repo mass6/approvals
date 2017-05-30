@@ -3,7 +3,7 @@
 namespace App;
 
 use Finite\State\State;
-use App\StateMachineConfigFactory;
+use App\WorkflowFactory;
 use Finite\State\StateInterface;
 use Illuminate\Support\Facades\Log;
 use Finite\StateMachine\StateMachine;
@@ -29,17 +29,17 @@ trait FiniteStateMachineTrait
      */
     protected $finiteLoader;
 
-
+    /**
+     * @var
+     */
     public $configFactory;
 
     /**
      * @return array
      */
     protected abstract function getStateMachineConfig();
-    public function getStateMachineConfigFactory()
-    {
-        return $this->stateMachineConfigFactory;
-    }
+
+
 
     /**
      * @param array|null $config

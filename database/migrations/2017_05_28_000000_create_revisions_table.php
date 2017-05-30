@@ -1,5 +1,7 @@
 <?php
 
+namespace App;
+
 use Illuminate\Database\Migrations\Migration;
 
 class CreateRevisionsTable extends Migration

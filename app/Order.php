@@ -49,9 +49,9 @@ class Order extends Model
      */
     protected $stateMachineConfig;
     /**
-     * @var StateMachineConfigFactory
+     * @var WorkflowFactory
      */
-    protected $stateMachineConfigFactory;
+    protected $workflowFactory;
 
     /**
      * Requisition constructor.
@@ -61,8 +61,8 @@ class Order extends Model
     public function __construct($attributes = [])
     {
         parent::__construct($attributes);
-        $this->stateMachineConfig = new OrderStateConfig($this);
-        $this->stateMachineConfigFactory = new StateMachineConfigFactory($this);
+        $this->stateMachineConfig = new OrderStateMachineConfig($this);
+        $this->workflowFactory    = new WorkflowFactory($this);
         $this->initStateMachine();
         $this->initAuditTrail([
             'auditTrailClass' => TransitionEvent::class,
@@ -81,9 +81,9 @@ class Order extends Model
     public static function boot()
     {
         parent::boot();
-        static::created(function ($model) {
-            $model->createOrderWorkflow();
-        });
+        //static::created(function ($model) {
+        //    $model->createOrderWorkflow();
+        //});
     }
 
 
@@ -93,26 +93,51 @@ class Order extends Model
      * @param $id
      * @return mixed
      */
-    public static function getFiniteModel($id)
+    public static function getStateMachineModel($id)
     {
         $model = static::where('id', $id)->first();
         if ($model) {
-            return $model->configureStateMachine();
+            return $model->setStateMachineApprovals();
         }
         return $model;
     }
 
 
     /**
+     * @return array
+     */
+    protected function getStateMachineConfig()
+    {
+        return $this->stateMachineConfig->getStateMachineConfig();
+    }
+
+    /**
      * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
      *
      * @return $this
      */
-    protected function configureStateMachine()
+    public function initializeWorkflow()
     {
-        $this->getStateMachineConfigFactory()->configureTransitions($this->stateMachine);
+        $this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
 
         return $this;
+    }
+
+    /**
+     *
+     */
+    public function reinitializeStateMachine()
+    {
+        $this->initStateMachine();
+        $this->initializeWorkflow();
+    }
+
+    /**
+     * @return WorkflowFactory
+     */
+    public function getWorkflowFactory()
+    {
+        return $this->workflowFactory;
     }
 
     /**
@@ -152,22 +177,12 @@ class Order extends Model
     }
 
     /**
-     * @return array
-     */
-    protected function getStateMachineConfig()
-    {
-        return $this->stateMachineConfig->getStateMachineConfig();
-    }
-
-    /**
-     * @param $requisition
-     * @param $transitionEvent
-     *
      * @return bool
      */
-    public function beforeApprove($requisition, $transitionEvent)
+    public function afterSubmit()
     {
-        return false;
+        $this->createOrderWorkflow();
+        $this->reinitializeStateMachine();
     }
 
     /**
@@ -177,10 +192,19 @@ class Order extends Model
      */
     public function afterApprove(\Finite\Event\TransitionEvent  $transitionEvent)
     {
-        // \Log::info('After Approved Callback');
-        \Log::info($transitionEvent->getTransition()->getName());
-
         $this->getWorkflow()->saveApproval($transitionEvent, Auth::user());
+        $this->reinitializeStateMachine();
+    }
+
+    /**
+     * @param $transitionEvent
+     *
+     * @return bool
+     */
+    public function afterFinalApproval(\Finite\Event\TransitionEvent  $transitionEvent)
+    {
+        event('OrderWasFinalApproved');
+        $this->reinitializeStateMachine();
     }
 
     /**

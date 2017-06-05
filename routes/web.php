@@ -5,10 +5,10 @@ use App\Workflow;
 
 Route::get('test', function () {
     //$lastApproval = '2.3';
-
     /** @var Order $order */
-    $order = Order::getFiniteModel(2);
-
+    $order = Order::find(1);
+    $order->initializeWorkflow();
+    dd($order->getTransitions());
 
     if ($order->getState() === 'PND') {
 

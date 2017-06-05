@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class Workflow
  * @package App
  * @property integer $next_approver
+ * @property string $definition
  * @property string $config
  * @property-read \App\User $nextApprover
  * @mixin \Eloquent
@@ -42,6 +43,22 @@ class Workflow extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * @param string $value
+     */
+    public function setDefinition(string $value)
+    {
+        $this->definition = $value;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefinition()
+    {
+        return json_decode($this->definition,true);
     }
 
     /**
@@ -105,11 +122,10 @@ class Workflow extends Model
      */
     public function saveApproval(\Finite\Event\TransitionEvent $transitionEvent, User $user)
     {
-        $rule = $transitionEvent->getTransition()->getName();
-
         return $this->approvals()->create([
             'user_id'  => $user->id,
-            'rule'     => $rule,
+            'rule'     => $transitionEvent->getTransition()->getName(),
+            'final'    => $transitionEvent->get('final-approval', false),
             'approved' => true,
         ]);
     }

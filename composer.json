@@ -6,9 +6,9 @@
     "type": "project",
     "require": {
         "php": ">=5.6.4",
-        "doctrine/dbal": "^2.5",
         "laravel/framework": "5.4.*",
         "laravel/tinker": "~1.0",
+        "mass6/laravel-state-workflows": "^1.0",
         "venturecraft/revisionable": "^1.28",
         "yohang/finite": "^1.1"
     },

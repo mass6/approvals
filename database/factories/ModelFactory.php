@@ -23,10 +23,10 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
     ];
 });
 $factory->define(App\WorkflowDefinition::class, function (Faker\Generator $faker) {
-    $config = json_encode(config('workflows.staged'));
+    $definition = json_encode(config('workflows.staged'));
     return [
         'name' => $faker->title,
-        'config' => $config,
+        'definition' => $definition,
     ];
 });
 $factory->define(App\Order::class, function (Faker\Generator $faker) {

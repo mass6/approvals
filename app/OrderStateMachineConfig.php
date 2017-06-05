@@ -1,12 +1,12 @@
 <?php
 
-namespace app;
+namespace App;
 
 /**
  * Class OrderStateMachineConfig
  * @package app
  */
-class OrderStateMachineConfig
+class OrderStateMachineConfig implements WorkflowConfig
 {
 
     /**
@@ -15,12 +15,18 @@ class OrderStateMachineConfig
     private $model;
 
     /**
+     * @var LevelBasedWorkflowConfig
+     */
+    private $workflowConfigGenerator;
+
+    /**
      * OrderStateMachineConfig constructor.
      * @param $model
      */
     public function __construct($model)
     {
         $this->model = $model;
+        $this->workflowConfigGenerator = new LevelBasedWorkflowConfig();
     }
 
     /**
@@ -30,8 +36,29 @@ class OrderStateMachineConfig
      */
     public function getStateMachineConfig()
     {
+        $config = $this->workflowConfigGenerator->generate();
+        collect($config['transitions'])->except(['submit', 'reject', 'cancel'])->each(function($transition, $key) use (&$config) {
+            $config['callbacks']['after'][] =
+                ['on' => $key, 'do' => [$this->model, 'afterApprove']];
+        });
+
+        //dd($config);
+
+        return array_merge(
+            [
+                'class' => get_class($this->model),
+                'stateColumn' => 'status',
+                'callbacks' => [
+                    'after' => [
+                        //['on' => 'submit', 'do' => [$this->model, 'afterSubmit']],
+                        ['from' => '', 'to' => 'APR', 'do' => [$this->model, 'afterFinalApproval']],
+                    ],
+                ],
+            ], $config);
+
         return [
             'class' => get_class($this->model),
+            'stateColumn' => 'status',
             'states' => [
                 'DRA' => [
                     'type' => 'initial',

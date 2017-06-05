@@ -167,6 +167,7 @@ return [
          * Package Service Providers...
          */
         Laravel\Tinker\TinkerServiceProvider::class,
+        Mass6\LaravelStateWorkflows\StateWorkflowsServiceProvider::class,
 
         /*
          * Application Service Providers...

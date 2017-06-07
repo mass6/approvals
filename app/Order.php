@@ -18,7 +18,7 @@ use Venturecraft\Revisionable\RevisionableTrait;
  */
 class Order extends Model
 {
-    use FiniteStateMachineTrait, FiniteAuditTrailTrait, RevisionableTrait;
+    use FiniteStateMachineTrait,  RevisionableTrait;
 
     /**
      * @var array
@@ -31,7 +31,7 @@ class Order extends Model
      *
      * @var bool
      */
-    protected $revisionCreationsEnabled = true;
+    protected $revisionCreationsEnabled = false;
 
     /**
      * Columns to be excluded from revision history
@@ -64,27 +64,27 @@ class Order extends Model
         $this->stateMachineConfig = new OrderStateMachineConfig($this);
         $this->workflowFactory    = new WorkflowFactory($this);
         $this->initStateMachine();
-        $this->initAuditTrail([
-            'auditTrailClass' => TransitionEvent::class,
-            'storeAuditTrailOnFirstAfterCallback' => false,
-            'attributes' => [[
-                'user_id' => function () {
-                    return Auth::id();
-                }],
-            ]
-        ]);
+        //$this->initAuditTrail([
+        //    'auditTrailClass' => TransitionEvent::class,
+        //    'storeAuditTrailOnFirstAfterCallback' => false,
+        //    'attributes' => [[
+        //        'user_id' => function () {
+        //            return Auth::id();
+        //        }],
+        //    ]
+        //]);
     }
 
     /**
      *
      */
-    public static function boot()
-    {
-        parent::boot();
-        //static::created(function ($model) {
-        //    $model->createOrderWorkflow();
-        //});
-    }
+    //public static function boot()
+    //{
+    //    parent::boot();
+    //    //static::created(function ($model) {
+    //    //    $model->createOrderWorkflow();
+    //    //});
+    //}
 
 
     /**
@@ -97,9 +97,23 @@ class Order extends Model
     {
         $model = static::where('id', $id)->first();
         if ($model) {
-            return $model->setStateMachineApprovals();
+            $model->restoreStateMachine();
         }
         return $model;
+    }
+
+    /**
+     * Create a new model instance that is existing.
+     *
+     * @param  array  $attributes
+     * @return \Illuminate\Database\Eloquent\Model|static
+     */
+    public function newFromBuilder($attributes = [], $connection = null)
+    {
+        $instance = parent::newFromBuilder($attributes, $connection);
+        $instance->restoreStateMachine();
+
+        return $instance;
     }
 
 
@@ -112,6 +126,15 @@ class Order extends Model
     }
 
     /**
+     *
+     */
+    public function restoreStateMachine()
+    {
+        $this->initStateMachine();
+        $this->initializeWorkflow();
+    }
+
+    /**
      * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
      *
      * @return $this
@@ -121,15 +144,6 @@ class Order extends Model
         $this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
 
         return $this;
-    }
-
-    /**
-     *
-     */
-    public function reinitializeStateMachine()
-    {
-        $this->initStateMachine();
-        $this->initializeWorkflow();
     }
 
     /**
@@ -182,7 +196,7 @@ class Order extends Model
     public function afterSubmit()
     {
         $this->createOrderWorkflow();
-        $this->reinitializeStateMachine();
+        $this->restoreStateMachine();
     }
 
     /**
@@ -193,7 +207,7 @@ class Order extends Model
     public function afterApprove(\Finite\Event\TransitionEvent  $transitionEvent)
     {
         $this->getWorkflow()->saveApproval($transitionEvent, Auth::user());
-        $this->reinitializeStateMachine();
+        $this->restoreStateMachine();
     }
 
     /**
@@ -204,7 +218,7 @@ class Order extends Model
     public function afterFinalApproval(\Finite\Event\TransitionEvent  $transitionEvent)
     {
         event('OrderWasFinalApproved');
-        $this->reinitializeStateMachine();
+        $this->restoreStateMachine();
     }
 
     /**

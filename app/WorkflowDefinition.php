@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class WorkflowDefinition
  * @package App
  * @property string $config
+ * @property string $definition
  * @mixin \Eloquent
  */
 class WorkflowDefinition extends Model
@@ -48,6 +49,14 @@ class WorkflowDefinition extends Model
     public function orders()
     {
         return $this->belongsToMany(Order::class, 'workflows')->withTimestamps();
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefinition()
+    {
+        return $this->definition;
     }
 
     /**

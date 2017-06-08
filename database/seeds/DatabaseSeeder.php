@@ -14,11 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-         $users = factory(User::class, 10)->create();
-         $user = $users->first();
-         factory(WorkflowDefinition::class, 1)->create(['name' => 'basic']);
-         factory(WorkflowDefinition::class, 1)->create(['name' => 'standard']);
-         factory(WorkflowDefinition::class, 1)->create(['name' => 'staged']);
-         //factory(Order::class, 10)->create(['user_id' => $user->id]);
+        factory(User::class, 10)->create();
+        $this->call(WorkflowDefinitionSeeder::class);
     }
 }

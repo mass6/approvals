@@ -20,254 +20,164 @@ class Order extends Model
 {
     use FiniteStateMachineTrait,  RevisionableTrait;
 
-    /**
-     * @var array
-     */
     protected $guarded = [];
-
-    /**
-     * Whether or not a revision entry will be created
-     * when a new requisition is first created.
-     *
-     * @var bool
-     */
+    protected $workflowFactory;
     protected $revisionCreationsEnabled = false;
-
-    /**
-     * Columns to be excluded from revision history
-     *
-     * @var array
-     */
     protected $dontKeepRevisionOf = [
         'id', 'created_at', 'updated_at'
     ];
 
-    /**
-     *  Instance that stores that state machine configuration
-     *
-     * @var RequisitionStateMachineConfig
-     */
-    protected $stateMachineConfig;
-    /**
-     * @var WorkflowFactory
-     */
-    protected $workflowFactory;
-
-    /**
-     * Requisition constructor.
-     *
-     * @param array $attributes
-     */
     public function __construct($attributes = [])
     {
+        //$this->initStateMachine();
         parent::__construct($attributes);
-        $this->stateMachineConfig = new OrderStateMachineConfig($this);
-        $this->workflowFactory    = new WorkflowFactory($this);
-        $this->initStateMachine();
-        //$this->initAuditTrail([
-        //    'auditTrailClass' => TransitionEvent::class,
-        //    'storeAuditTrailOnFirstAfterCallback' => false,
-        //    'attributes' => [[
-        //        'user_id' => function () {
-        //            return Auth::id();
-        //        }],
-        //    ]
-        //]);
     }
 
-    /**
-     *
-     */
-    //public static function boot()
+    //public function newFromBuilder($attributes = [], $connection = null)
     //{
-    //    parent::boot();
-    //    //static::created(function ($model) {
-    //    //    $model->createOrderWorkflow();
-    //    //});
+    //    $instance = parent::newFromBuilder($attributes, $connection);
+    //    $instance->restoreStateMachine();
+    //
+    //    return $instance;
     //}
 
-
-    /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @param $id
-     * @return mixed
-     */
-    public static function getStateMachineModel($id)
-    {
-        $model = static::where('id', $id)->first();
-        if ($model) {
-            $model->restoreStateMachine();
-        }
-        return $model;
-    }
-
-    /**
-     * Create a new model instance that is existing.
-     *
-     * @param  array  $attributes
-     * @return \Illuminate\Database\Eloquent\Model|static
-     */
-    public function newFromBuilder($attributes = [], $connection = null)
-    {
-        $instance = parent::newFromBuilder($attributes, $connection);
-        $instance->restoreStateMachine();
-
-        return $instance;
-    }
-
-
-    /**
-     * @return array
-     */
     protected function getStateMachineConfig()
     {
-        return $this->stateMachineConfig->getStateMachineConfig();
+        return [
+            'class' => get_class($this),
+            'states' => [
+                'DRA' => [
+                    'type' => 'initial',
+                    'properties' => ['name' => 'draft'],
+                ],
+                'PND' => [
+                    'type' => 'normal',
+                    'properties' => ['name' => 'pending approval'],
+                ],
+                'APR' => [
+                    'type' => 'final',
+                    'properties' => ['name' => 'approved'],
+                ],
+                'CAN' => [
+                    'type' => 'final',
+                    'properties' => ['name' => 'cancelled'],
+                ]
+            ],
+            'transitions' => [
+                'submit' => ['from' => ['DRA'], 'to' => 'PND', 'properties' => []],
+                'reject' => ['from' => ['PND'], 'to' => 'DRA', 'properties' => []],
+                'cancel' => ['from' => ['DRA', 'PND', 'APR'], 'to' => 'CAN', 'properties' => []],
+            ],
+            'callbacks' => [
+                'before' => [
+                    ['on' => 'submit', 'do' => [$this->model, 'beforeSubmit']],
+                ],
+                'after' => [
+                    ['on' => 'submit', 'do' => [$this->model, 'afterSubmit']],
+                    ['from' => '', 'to' => 'APR', 'do' => [$this->model, 'afterFinalApproval']],
+                ],
+            ],
+        ];
     }
 
-    /**
-     *
-     */
-    public function restoreStateMachine()
-    {
-        $this->initStateMachine();
-        $this->initializeWorkflow();
-    }
 
-    /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @return $this
-     */
-    public function initializeWorkflow()
-    {
-        $this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
 
-        return $this;
-    }
-
-    /**
-     * @return WorkflowFactory
-     */
-    public function getWorkflowFactory()
-    {
-        return $this->workflowFactory;
-    }
-
-    /**
-     *
-     */
+    /** createOrderWorkflow */
     public function createOrderWorkflow()
     {
+        $orderValue = $this->total;
+
         // TODO:: replace with strategy for finding appropriate workflow definition
         /** @var WorkflowDefinition $workflowDefinition */
-        $workflowDefinition = WorkflowDefinition::latest('id')->first();
-        $this->workflowDefinitions()->attach($workflowDefinition, ['config' => $workflowDefinition->getConfig()]);
-        event(new OrderCreated($this));
+        $workflowDefinition = WorkflowDefinition::whereName('All Rules')->first();
+        $rules = collect(json_decode($workflowDefinition->getDefinition(), true));
+
+        $config = $rules->first(function($rule) use ($orderValue) {
+            if (isset($rule['max_value'])) {
+                return $orderValue >= $rule['min_value'] && $orderValue <= $rule['max_value'];
+            }
+
+            return $orderValue >= $rule['min_value'];
+        });
+        $this->workflowDefinitions()->attach($workflowDefinition, ['config' => json_encode($config)]);
+        //event(new OrderCreated($this));
 
     }
 
-    /**
-     * @param $transition
-     * @return $this
-     */
-    public function applyTransition($transition)
+    public function beforeSubmit($model, $event)
     {
-        if ($this->can($transition)) {
-            $this->apply($transition);
-
-            return $this;
-        }
-
+        $model->createOrderWorkflow();
     }
 
-    /**
-     * Relation: Requisition has many transition events
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
-     */
-    public function transitionEvents()
-    {
-        return $this->morphMany(TransitionEvent::class, 'stateful');
-    }
-
-    /**
-     * @return bool
-     */
     public function afterSubmit()
     {
         $this->createOrderWorkflow();
         $this->restoreStateMachine();
     }
 
-    /**
-     * @param $transitionEvent
-     *
-     * @return bool
-     */
     public function afterApprove(\Finite\Event\TransitionEvent  $transitionEvent)
     {
         $this->getWorkflow()->saveApproval($transitionEvent, Auth::user());
         $this->restoreStateMachine();
     }
 
-    /**
-     * @param $transitionEvent
-     *
-     * @return bool
-     */
     public function afterFinalApproval(\Finite\Event\TransitionEvent  $transitionEvent)
     {
         event('OrderWasFinalApproved');
         $this->restoreStateMachine();
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    //public function restoreStateMachine()
+    //{
+    //    $this->initStateMachine();
+    //    $this->initializeWorkflow();
+    //}
 
+    //public function initializeWorkflow()
+    //{
+    //    $this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
+    //
+    //    return $this;
+    //}
 
-    /**
-     * @return mixed
-     */
-    public function getStatus()
-    {
-        return $this->status;
-    }
+    //public function getWorkflowFactory()
+    //{
+    //    return $this->workflowFactory;
+    //}
 
-    /**
-     * @return mixed
-     */
-    public function getNextApprover()
-    {
-        return $this->currentWorkflow()->getNextApprover();
-    }
+    //public function transitionEvents()
+    //{
+    //    return $this->morphMany(TransitionEvent::class, 'stateful');
+    //}
 
+    //public function getNextApprover()
+    //{
+    //    return $this->currentWorkflow()->getNextApprover();
+    //}
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
     public function workflowDefinitions()
     {
         return $this->belongsToMany(WorkflowDefinition::class, 'workflows')->withTimestamps();
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function workflows()
     {
         return $this->hasMany(Workflow::class);
     }
 
-    /**
-     * @return mixed
-     */
     public function getWorkflow()
     {
         return $this->hasMany(Workflow::class)->latest()->first();
+    }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function getStatus()
+    {
+        return $this->status;
     }
 }

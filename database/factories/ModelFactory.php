@@ -23,14 +23,16 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
     ];
 });
 $factory->define(App\WorkflowDefinition::class, function (Faker\Generator $faker) {
-    $config = json_encode(config('workflows.staged'));
+    static $definition;
+
     return [
         'name' => $faker->title,
-        'config' => $config,
+        'definition' => $definition ?: $definition = json_encode(config('business-rules.value_based.rules')),
     ];
 });
 $factory->define(App\Order::class, function (Faker\Generator $faker) {
     return [
         'name' => $faker->word,
+        'total' => mt_rand(100, 60000),
     ];
 });

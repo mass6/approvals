@@ -18,7 +18,6 @@ class OrderListener
      */
     public function handle(OrderCreated $event)
     {
-        \Log::info('Caught Event');
         $workflow = $event->order->getWorkflow();
         $workflow->setNextApprover(User::find(8));
     }

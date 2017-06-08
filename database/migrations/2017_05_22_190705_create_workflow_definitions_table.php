@@ -16,7 +16,8 @@ class CreateWorkflowDefinitionsTable extends Migration
         Schema::create('workflow_definitions', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
-            $table->text('config');
+            $table->text('definition');
+            $table->text('config')->nullable();
             $table->timestamps();
         });
     }

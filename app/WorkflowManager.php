@@ -5,10 +5,10 @@ namespace App;
 use Finite\StateMachine\StateMachine;
 
 /**
- * Class WorkflowFactory
+ * Class WorkflowManager
  * @package App
  */
-class WorkflowFactory
+class WorkflowManager
 {
 
     /**

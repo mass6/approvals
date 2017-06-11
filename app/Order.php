@@ -22,7 +22,7 @@ class Order extends Model
     use FiniteStateMachineTrait, RevisionableTrait;
 
     protected $guarded = [];
-    protected $workflowFactory;
+    protected $workflowManager;
     protected $revisionCreationsEnabled = false;
     protected $dontKeepRevisionOf = [
         'id', 'created_at', 'updated_at'
@@ -32,7 +32,7 @@ class Order extends Model
     {
         $this->initStateMachine();
         parent::__construct($attributes);
-        $this->workflowFactory    = new WorkflowFactory($this);
+        $this->workflowManager = new WorkflowManager($this);
     }
 
     public function newFromBuilder($attributes = [], $connection = null)
@@ -149,14 +149,14 @@ class Order extends Model
 
     public function initializeWorkflow()
     {
-        $this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
+        $this->getWorkflowManager()->initializeWorkflow($this->stateMachine);
 
         return $this;
     }
 
-    public function getWorkflowFactory()
+    public function getWorkflowManager()
     {
-        return $this->workflowFactory;
+        return $this->workflowManager;
     }
 
     public function businessRules()

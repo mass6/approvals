@@ -52,6 +52,7 @@ class OrderStateMachineConfig
             ],
             'transitions' => [
                 'submit' => ['from' => ['DRA'], 'to' => 'PND', 'properties' => []],
+                'reject' => ['from' => ['PND'], 'to' => 'DRA', 'properties' => []],
                 'cancel' => ['from' => ['DRA', 'PND', 'APR'], 'to' => 'CAN', 'properties' => []],
             ],
             'callbacks' => [

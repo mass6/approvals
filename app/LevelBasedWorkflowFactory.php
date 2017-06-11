@@ -3,7 +3,9 @@
 namespace App;
 
 use Finite\StateMachine\StateMachine;
+use Finite\Transition\Transition;
 use Illuminate\Support\Collection;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class LevelBasedWorkflowFactory
 {
@@ -19,13 +21,14 @@ class LevelBasedWorkflowFactory
             $workflowConfig = $model->getWorkflow()->getConfig();
             $approvalLevels    = $this->getApprovalLevels($workflowConfig);
 
-            $nextApprovalLevel = $this->getNextApprovalLevel($model, $approvalLevels);
-            $nextApprovalTransition = 'approve_' . $nextApprovalLevel;
-            $stateAfterNextApproval = $this->getNextState($nextApprovalLevel, $approvalLevels);
+            $nextApprovalTransition = $this->getNextApprovalTransition($model, $approvalLevels);
+            $sm->addTransition($nextApprovalTransition);
 
-            $sm->addTransition($nextApprovalTransition, 'PND', $stateAfterNextApproval);
+            $rejectTransition = $this->getRejectTransition($nextApprovalTransition->getName());
+            $sm->addTransition($rejectTransition);
+
             $sm->getDispatcher()->addListener('finite.post_transition.' . $nextApprovalTransition, function(\Finite\Event\TransitionEvent $e) use ($model) {
-                $this->afterApprove($e, $model);
+                $model->afterApprove($model, $e);
             });
         }
 
@@ -38,38 +41,32 @@ class LevelBasedWorkflowFactory
      */
     protected function getApprovalLevels($workflowConfig): Collection
     {
-        $approvalLevels = collect($workflowConfig['levels'])->keyBy('name')->map(function ($l) {
-            return collect(range(1, $l['signatories']))->map(function ($s, $i) use ($l) {
-                return $l['level'] . '.' . ($i + 1);
-            });
+        $approvalLevels = collect($workflowConfig)->keyBy('name')->map(function ($level) {
+            if ($level['signatories'] >= 1) {
+                return collect(range(1, $level['signatories']))->map(function ($s, $i) use ($level) {
+                    return $level['level'] . '.' . ($i + 1);
+                });
+            }
         })->flatten();
 
         return $approvalLevels;
     }
 
-    /**
-     * @param \Finite\Event\TransitionEvent $event
-     * @param                               $model
-     */
-    protected function afterApprove(\Finite\Event\TransitionEvent $event, $model)
+    protected function getNextApprovalTransition($model, $approvalLevels)
     {
-        $model->afterApprove($event);
-    }
+        $nextApprovalLevel = $this->getNextApprovalLevel($model, $approvalLevels);
+        $transitionName = 'approve_' . $nextApprovalLevel;
+        $optionsResolver = new OptionsResolver();
+        $optionsResolver->setDefault('approved', true);
+        $optionsResolver->setDefault('comment', null);
+        $state = 'PND';
 
-    /**
-     * @param $nextApprovalLevel
-     * @param $approvalLevels
-     * @return string
-     */
-    protected function getNextState($nextApprovalLevel, $approvalLevels): string
-    {
         if ($nextApprovalLevel === $approvalLevels->max()) {
-            $stateAfterNextApproval = 'APR';
-        } else {
-            $stateAfterNextApproval = 'PND';
+            $optionsResolver->setDefault('final-approval', true);
+            $state = 'APR';
         }
 
-        return $stateAfterNextApproval;
+        return new Transition($transitionName, 'PND', $state,null,$optionsResolver);
     }
 
     /**
@@ -91,5 +88,39 @@ class LevelBasedWorkflowFactory
         }
 
         return $nextApprovalLevel;
+    }
+
+    /**
+     * @param $nextApprovalLevel
+     * @param $approvalLevels
+     * @return string
+     */
+    protected function getNextState($nextApprovalLevel, $approvalLevels): string
+    {
+        if ($nextApprovalLevel === $approvalLevels->max()) {
+            $stateAfterNextApproval = 'APR';
+        } else {
+            $stateAfterNextApproval = 'PND';
+        }
+
+        return $stateAfterNextApproval;
+    }
+
+    /**
+     * @param \Finite\Event\TransitionEvent $event
+     * @param                               $model
+     */
+    protected function afterApprove($model, \Finite\Event\TransitionEvent $event)
+    {
+        $model->afterApprove($model, $event);
+    }
+
+    protected function getRejectTransition($approvalLevel)
+    {
+        $optionsResolver = new OptionsResolver();
+        $optionsResolver->setDefault('approval_level', $approvalLevel);
+        $optionsResolver->setRequired('comment');
+
+        return new Transition('reject', 'PND', 'DRA', null, $optionsResolver);
     }
 }

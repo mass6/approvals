@@ -20,7 +20,10 @@ class Order extends WorkflowModel
         // TODO:: replace with strategy for finding appropriate workflow definition
         /** @var WorkflowDefinition $workflowDefinition */
         $workflowDefinition = WorkflowDefinition::latest('id')->first();
-        $this->workflowDefinitions()->attach($workflowDefinition, ['definition' => $workflowDefinition->getDefinition()]);
+        $this->workflowDefinitions()->attach($workflowDefinition, [
+            'definition' => $workflowDefinition->getDefinition(),
+            'active' => true,
+        ]);
         // event(new OrderCreated($this));
 
     }
@@ -65,8 +68,10 @@ class Order extends WorkflowModel
 
     public function afterReject($model, $event)
     {
-        $this->getWorkflow()->saveRejection(Auth::user(), $event->get('approval_level'), $event->get('comment'));
-        $this->restoreStateMachine();
+        $workflow = $this->getWorkflow();
+        $workflow->saveRejection(Auth::user(), $event->get('approval_level'), $event->get('comment'));
+        $workflow->deactivate();
+        //$this->restoreStateMachine();
     }
 
     /**

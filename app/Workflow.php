@@ -24,6 +24,7 @@ class Workflow extends Model
      * @var array
      */
     protected $guarded = [];
+    protected $casts = ['active' => 'boolean'];
     
     /**
      * @param User $user
@@ -139,5 +140,13 @@ class Workflow extends Model
     public function saveRejection(User $user, string $rule, string $comment)
     {
         return $this->saveApproval($user, $rule, false, false, $comment);
+    }
+
+    public function deactivate()
+    {
+        $this->active = false;
+        $this->save();
+
+        return $this;
     }
 }

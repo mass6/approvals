@@ -19,6 +19,7 @@ class CreateWorkflowsTable extends Migration
             $table->unsignedInteger('workflow_definition_id');
             $table->text('definition');
             $table->text('config')->nullable();
+            $table->boolean('active');
             $table->unsignedInteger('next_approver')->nullable();
             $table->timestamps();
         });

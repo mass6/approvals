@@ -100,6 +100,6 @@ abstract class WorkflowModel extends Model
 
     public function getWorkflow()
     {
-        return $this->hasMany(Workflow::class)->latest()->first();
+        return $this->hasMany(Workflow::class)->whereActive(true)->latest()->first();
     }
 }

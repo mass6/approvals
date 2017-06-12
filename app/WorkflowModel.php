@@ -10,7 +10,7 @@ use Mass6\LaravelStateWorkflows\StateAuditingTrait;
 
 abstract class WorkflowModel extends Model
 {
-    use StateMachineTrait, StateAuditingTrait, RevisionableTrait;
+    use StateMachineTrait, RevisionableTrait;
 
     /** @var  WorkflowConfig */
     protected $stateMachineConfig;
@@ -33,6 +33,17 @@ abstract class WorkflowModel extends Model
     ];
 
     /**
+     * Requisition constructor.
+     *
+     * @param array $attributes
+     */
+    public function __construct($attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->stateMachineConfig = new OrderStateMachineConfig($this);
+    }
+
+    /**
      * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
      *
      * @return $this
@@ -40,20 +51,32 @@ abstract class WorkflowModel extends Model
     public function initializeWorkflow()
     {
         $this->initStateMachine();
-        $this->initAuditTrail([
-            'auditTrailClass' => TransitionEvent::class,
-            'storeAuditTrailOnFirstAfterCallback' => false,
-            'attributes' => [
-                [
-                    'user_id' => function () {
-                        return Auth::id();
-                    },
-                ],
-            ],
-        ]);
+        //$this->initAuditTrail([
+        //    'auditTrailClass' => TransitionEvent::class,
+        //    'storeAuditTrailOnFirstAfterCallback' => false,
+        //    'attributes' => [
+        //        [
+        //            'user_id' => function () {
+        //                return Auth::id();
+        //            },
+        //        ],
+        //    ],
+        //]);
         //$this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
 
         return $this;
+    }
+
+    public function newFromBuilder($attributes = [], $connection = null)
+    {
+        $instance = parent::newFromBuilder($attributes, $connection);
+        $instance->restoreStateMachine();
+        return $instance;
+    }
+
+    public function restoreStateMachine()
+    {
+        $this->initStateMachine();
     }
 
 
@@ -97,24 +120,6 @@ abstract class WorkflowModel extends Model
     }
 
     /**
-     *
-     */
-    public function reinitializeStateMachine()
-    {
-        $this->initStateMachine();
-        $this->initializeWorkflow();
-    }
-
-    /**
-     * Relation: Requisition has many transition events
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
-     */
-    public function transitionEvents()
-    {
-        return $this->morphMany(TransitionEvent::class, 'stateful');
-    }
-
-    /**
      * @return mixed
      */
     public function getNextApprover()
@@ -145,18 +150,5 @@ abstract class WorkflowModel extends Model
     public function getWorkflow()
     {
         return $this->hasMany(Workflow::class)->latest()->first();
-    }
-
-    /**
-     * Whether of not to save the initial state before any transitions are applied
-     *
-     * @return boolean
-     */
-    public function shouldSaveInitialState(): bool
-    {
-        if (property_exists($this, 'saveInitialState')) {
-            return $this->saveInitialState;
-        }
-        return false;
     }
 }

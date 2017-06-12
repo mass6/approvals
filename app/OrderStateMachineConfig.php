@@ -55,39 +55,6 @@ class OrderStateMachineConfig implements WorkflowConfig
                     ],
                 ],
             ], $config);
-
-        return [
-            'class' => get_class($this->model),
-            'stateColumn' => 'status',
-            'states' => [
-                'DRA' => [
-                    'type' => 'initial',
-                    'properties' => ['name' => 'draft'],
-                ],
-                'PND' => [
-                    'type' => 'normal',
-                    'properties' => ['name' => 'pending approval'],
-                ],
-                'APR' => [
-                    'type' => 'final',
-                    'properties' => ['name' => 'approved'],
-                ],
-                'CAN' => [
-                    'type' => 'final',
-                    'properties' => ['name' => 'cancelled'],
-                ]
-            ],
-            'transitions' => [
-                'submit' => ['from' => ['DRA'], 'to' => 'PND', 'properties' => []],
-                'cancel' => ['from' => ['DRA', 'PND', 'APR'], 'to' => 'CAN', 'properties' => []],
-            ],
-            'callbacks' => [
-                'after' => [
-                    ['on' => 'submit', 'do' => [$this->model, 'afterSubmit']],
-                    ['from' => '', 'to' => 'APR', 'do' => [$this->model, 'afterFinalApproval']],
-                ],
-            ],
-        ];
     }
 
 

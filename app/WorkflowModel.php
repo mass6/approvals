@@ -3,10 +3,8 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Venturecraft\Revisionable\RevisionableTrait;
 use Mass6\LaravelStateWorkflows\StateMachineTrait;
-use Mass6\LaravelStateWorkflows\StateAuditingTrait;
 
 abstract class WorkflowModel extends Model
 {
@@ -15,56 +13,36 @@ abstract class WorkflowModel extends Model
     /** @var  WorkflowConfig */
     protected $stateMachineConfig;
 
-    /**
-     * @var WorkflowFactory
-     */
-    protected $workflowFactory;
-
-    /**
-     * Whether or not a revision entry will be created
-     * when a new requisition is first created.
-     *
-     * @var bool
-     */
     protected $revisionCreationsEnabled = false;
 
     protected $dontKeepRevisionOf = [
         'id', 'created_at', 'updated_at'
     ];
 
-    /**
-     * Requisition constructor.
-     *
-     * @param array $attributes
-     */
     public function __construct($attributes = [])
     {
         parent::__construct($attributes);
-        $this->stateMachineConfig = new OrderStateMachineConfig($this);
+        $this->stateMachineConfig = new BaseConfig($this);
     }
 
-    /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @return $this
-     */
-    public function initializeWorkflow()
+    public static function create(array $attributes = [])
     {
-        $this->initStateMachine();
-        //$this->initAuditTrail([
-        //    'auditTrailClass' => TransitionEvent::class,
-        //    'storeAuditTrailOnFirstAfterCallback' => false,
-        //    'attributes' => [
-        //        [
-        //            'user_id' => function () {
-        //                return Auth::id();
-        //            },
-        //        ],
-        //    ],
-        //]);
-        //$this->getWorkflowFactory()->initializeWorkflow($this->stateMachine);
+        $model = static::query()->create($attributes);
+        $model->initializeWorkflow();
+        \Log::info("Order: " . $model->id);
+        return $model;
+    }
 
-        return $this;
+    public function newInstance($attributes = [], $exists = false)
+    {
+        $model = new static((array) $attributes);
+        $model->exists = $exists;
+        $model->setConnection(
+            $this->getConnectionName()
+        );
+        $model->initializeWorkflow();
+
+        return $model;
     }
 
     public function newFromBuilder($attributes = [], $connection = null)
@@ -74,18 +52,18 @@ abstract class WorkflowModel extends Model
         return $instance;
     }
 
+    public function initializeWorkflow()
+    {
+        $this->initStateMachine();
+        return $this;
+    }
+
     public function restoreStateMachine()
     {
         $this->initStateMachine();
+        return $this;
     }
 
-
-    /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @param $id
-     * @return mixed
-     */
     public static function getStateMachineModel($id)
     {
         $model = static::where('id', $id)->first();
@@ -95,58 +73,31 @@ abstract class WorkflowModel extends Model
         return $model;
     }
 
-    /**
-     * @return array
-     */
     protected function getStateMachineConfig()
     {
         return $this->stateMachineConfig->getStateMachineConfig();
     }
 
-    /**
-     * @return mixed
-     */
     public function getStatus()
     {
         return $this->status;
     }
 
-    /**
-     * @return WorkflowFactory
-     */
-    public function getWorkflowFactory()
-    {
-        return $this->workflowFactory;
-    }
-
-    /**
-     * @return mixed
-     */
     public function getNextApprover()
     {
         return $this->currentWorkflow()->getNextApprover();
     }
 
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
     public function workflowDefinitions()
     {
         return $this->belongsToMany(WorkflowDefinition::class, 'workflows')->withTimestamps();
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function workflows()
     {
         return $this->hasMany(Workflow::class);
     }
 
-    /**
-     * @return mixed
-     */
     public function getWorkflow()
     {
         return $this->hasMany(Workflow::class)->latest()->first();

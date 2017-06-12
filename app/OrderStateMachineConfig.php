@@ -41,9 +41,7 @@ class OrderStateMachineConfig implements WorkflowConfig
             $config['callbacks']['after'][] =
                 ['on' => $key, 'do' => [$this->model, 'afterApprove']];
         });
-
-        //dd($config);
-
+        
         return array_merge(
             [
                 'class' => get_class($this->model),

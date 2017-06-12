@@ -103,8 +103,6 @@ class Workflow extends Model
 
 
     /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function approvals()
@@ -114,21 +112,32 @@ class Workflow extends Model
 
 
     /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @param \Finite\Event\TransitionEvent $transitionEvent
-     * @param User                          $user
+     * @param User   $user
+     * @param string $rule
+     * @param bool   $final
+     * @param bool   $approved
+     * @param null   $comment
      * @return Model
      */
-    public function saveApproval(\Finite\Event\TransitionEvent $transitionEvent, User $user)
+    public function saveApproval(User $user, string $rule, bool $final, bool $approved, $comment = null)
     {
         return $this->approvals()->create([
             'user_id'  => $user->id,
-            'rule'     => $transitionEvent->getTransition()->getName(),
-            'final'    => $transitionEvent->get('final-approval', false),
-            'approved' => true,
+            'rule'     => $rule,
+            'final'    => $final,
+            'approved' => $approved,
+            'comment'  => $comment
         ]);
     }
 
-
+    /**
+     * @param User   $user
+     * @param string $rule
+     * @param string $comment
+     * @return Model
+     */
+    public function saveRejection(User $user, string $rule, string $comment)
+    {
+        return $this->saveApproval($user, $rule, false, false, $comment);
+    }
 }

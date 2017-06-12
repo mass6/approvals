@@ -3,10 +3,6 @@
 namespace App;
 
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
-use Mass6\LaravelStateWorkflows\StateAuditingTrait;
-use Mass6\LaravelStateWorkflows\StateMachineTrait;
-use Venturecraft\Revisionable\RevisionableTrait;
 
 class Order extends WorkflowModel
 {
@@ -14,6 +10,7 @@ class Order extends WorkflowModel
      * @var array
      */
     protected $guarded = [];
+    protected $stateColumn = 'status';
 
     /**
      *
@@ -24,37 +21,51 @@ class Order extends WorkflowModel
         /** @var WorkflowDefinition $workflowDefinition */
         $workflowDefinition = WorkflowDefinition::latest('id')->first();
         $this->workflowDefinitions()->attach($workflowDefinition, ['definition' => $workflowDefinition->getDefinition()]);
-        event(new OrderCreated($this));
+        // event(new OrderCreated($this));
 
     }
 
     /**
      * @return bool
      */
-    public function afterSubmit()
+    public function beforePreSubmit()
     {
         $this->createOrderWorkflow();
+        // $this->save();
         $this->restoreStateMachine();
     }
 
     /**
-     * @param $transitionEvent
-     *
      * @return bool
      */
-    public function afterApprove($model, \Finite\Event\TransitionEvent  $transitionEvent)
+    public function afterPreSubmit()
     {
-        $this->getWorkflow()->saveApproval($transitionEvent, Auth::user());
+        \Log::info('Applying Submit');
+        $this->apply('submit');
+        // $this->restoreStateMachine();
     }
 
-    /**
-     * @param $transitionEvent
-     *
-     * @return bool
-     */
+    public function afterApprove($model, \Finite\Event\TransitionEvent  $transitionEvent)
+    {
+        $this->getWorkflow()->saveApproval(
+            Auth::user(),
+            $transitionEvent->getTransition()->getName(),
+            $transitionEvent->get('final-approval', false),
+            true,
+            $transitionEvent->get('comment', null)
+        );
+        $this->restoreStateMachine();
+    }
+
     public function afterFinalApproval(\Finite\Event\TransitionEvent  $transitionEvent)
     {
         event('OrderWasFinalApproved');
+        $this->restoreStateMachine();
+    }
+
+    public function afterReject($model, $event)
+    {
+        $this->getWorkflow()->saveRejection(Auth::user(), $event->get('approval_level'), $event->get('comment'));
         $this->restoreStateMachine();
     }
 

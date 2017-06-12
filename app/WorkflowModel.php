@@ -22,7 +22,7 @@ abstract class WorkflowModel extends Model
     public function __construct($attributes = [])
     {
         parent::__construct($attributes);
-        $this->stateMachineConfig = new BaseConfig($this);
+        $this->stateMachineConfig = new LevelBasedWorkflowConfig($this);
     }
 
     public static function create(array $attributes = [])
@@ -75,7 +75,7 @@ abstract class WorkflowModel extends Model
 
     protected function getStateMachineConfig()
     {
-        return $this->stateMachineConfig->getStateMachineConfig();
+        return $this->stateMachineConfig->getConfig();
     }
 
     public function getStatus()

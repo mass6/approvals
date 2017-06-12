@@ -5,7 +5,7 @@ namespace App;
 use Illuminate\Support\Collection;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class JustInTimeConfig
+class ApprovalLevelsConfig
 {
     public function generate($model)
     {

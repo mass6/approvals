@@ -4,5 +4,5 @@ namespace App;
 
 interface WorkflowConfig
 {
-    public function getStateMachineConfig();
+    public function getConfig();
 }

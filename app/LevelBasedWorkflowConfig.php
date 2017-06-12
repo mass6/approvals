@@ -2,87 +2,96 @@
 
 namespace App;
 
-use Illuminate\Support\Collection;
-
-class LevelBasedWorkflowConfig
+class LevelBasedWorkflowConfig implements WorkflowConfig
 {
-    public function generate()
+    /**
+     * @var
+     */
+    private $model;
+
+    /**
+     * @var ApprovalLevelsConfig
+     */
+    private $workflowConfigGenerator;
+
+    /**
+     * OrderStateMachineConfig constructor.
+     * @param $model
+     */
+    public function __construct($model)
     {
-        $def = $this->getDefinition();
-        $approvalLevels = $this->getApprovalLevels($def);
-
-        $config['states'] = $baseStates = [
-            'draft' => [
-                'type'       => 'initial',
-                'properties' => ['name' => 'draft'],
-            ],
-            'approved' => [
-                    'type'       => 'final',
-                    'properties' => ['name' => 'approved'],
-            ],
-            'cancelled' => [
-                    'type'       => 'final',
-                    'properties' => ['name' => 'cancelled'],
-            ],
-        ];
-        $approvalStates = collect([]);
-        $approvalTransitions = collect([]);
-         $approvalLevels->each(function($level) use (&$approvalStates, &$approvalTransitions) {
-             $approvalStates->push('pending_' . $level);
-             $approvalTransitions->push('approve_' . $level);
-        });
-
-        $approvalStates->each(function($transition) use (&$config) {
-            $config['states'][$transition] = [
-                'type' => 'normal',
-                'properties' => ['name' => 'pending level ' . $transition . ' approval'],
-            ];
-        });
-
-        $config['transitions']['cancel'] = ['from' => collect($baseStates)->except('cancelled')->keys()->merge($approvalStates)->toArray(), 'to' => 'CAN', 'properties' => []];
-        $config['transitions']['submit'] = ['from' => ['draft'], 'to' => $approvalStates->first(), 'properties' => []];
-        $config['transitions']['reject'] = ['from' => $approvalStates->toArray(), 'to' => 'draft', 'properties' => []];
-        $approvalTransitions->each(function($transition, $index) use (&$config, $approvalStates, $approvalTransitions) {
-            if ($transition !== $approvalTransitions->max()) {
-                $config['transitions'][$transition] = ['from' => [$approvalStates[$index]], 'to' => $approvalStates[$index + 1], 'properties' => ['final-approval' => false]];
-            } else {
-                $config['transitions'][$transition] = ['from' => [$approvalStates[$index]], 'to' => 'approved', 'properties' => ['final-approval' => true]];
-            }
-        });
-
-
-        //dd($config);
-        //$config['callbacks'] = [
-        //    'after' => [
-        //        ['on' => 'submit', 'do' => ['App\Order', 'afterSubmit']],
-        //        ['from' => '', 'to' => 'APR', 'do' => ['App\Order', 'afterFinalApproval']],
-        //    ],
-        //];
-
-
-        //dd($config);
-
-        return $config;
-    }
-
-
-    protected function getDefinition()
-    {
-        return collect(config('workflows.staged'));
+        $this->model = $model;
+        $this->workflowConfigGenerator = new ApprovalLevelsConfig();
     }
 
     /**
-     * @param $workflowConfig
-     * @return Collection
+     * Return the state machine configuration
+     *
+     * @return array
      */
-    protected function getApprovalLevels($workflowConfig): Collection
+    public function getConfig()
     {
-        $approvalLevels = collect($workflowConfig['levels'])->keyBy('name')->map(function ($l) {
-            return collect(range(1, $l['signatories']))->map(function ($s, $i) use ($l) {
-                return $l['level'] . '.' . ($i + 1);
-            });
-        })->flatten();
+        if ($this->model->getWorkflow()) {
+            $workflowConfig = $this->workflowConfigGenerator->generate($this->model);
+            return $this->mergeWorkflowConfig($this->getBaseConfig(), $workflowConfig);
+        } else {
+            return $this->getBaseConfig();
+        }
+    }
 
-        return $approvalLevels;
+    /**
+     * @return array
+     */
+    protected function getBaseConfig(): array
+    {
+        return [
+            'class'       => get_class($this->model),
+            'states'      => [
+                'draft'     => [
+                    'type'       => 'initial',
+                    'properties' => ['name' => 'draft'],
+                ],
+                'approved'  => [
+                    'type'       => 'final',
+                    'properties' => ['name' => 'approved'],
+                ],
+                'cancelled' => [
+                    'type'       => 'final',
+                    'properties' => ['name' => 'cancelled'],
+                ]
+            ],
+            'transitions' => [
+                'cancel'     => ['from' => ['draft', 'approved'], 'to' => 'cancelled', 'properties' => []],
+                'pre-submit' => ['from' => ['draft'], 'to' => 'draft', 'properties' => []],
+            ],
+            'callbacks'   => [
+                'before' => [
+                    ['on' => 'pre-submit', 'do' => [$this->model, 'beforePreSubmit']],
+                ],
+                'after'  => [
+                    ['on' => 'pre-submit', 'do' => [$this->model, 'afterPreSubmit']],
+                    ['on' => 'reject', 'do' => [$this->model, 'afterReject']],
+                    ['from' => '', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @param $baseConfig
+     * @param $workflowConfig
+     * @return mixed
+     */
+    protected function mergeWorkflowConfig($baseConfig, $workflowConfig)
+    {
+        $config = [];
+        $config['class'] = $baseConfig['class'];
+        $config['states'] = array_merge(array_get($baseConfig, 'states', []), array_get($workflowConfig, 'states', []));
+        $config['transitions'] = array_merge(array_get($baseConfig, 'transitions', []), array_get($workflowConfig, 'transitions', []));
+        $config['transitions']['cancel']['from'] = array_merge(array_get($baseConfig, 'transitions.cancel.from', []), array_get($workflowConfig, 'transitions.cancel.from', []));
+        $config['callbacks']['before']           = array_merge(array_get($baseConfig, 'callbacks.before', []), array_get($workflowConfig, 'callbacks.before', []));
+        $config['callbacks']['after']            = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
+
+        return $config;
     }
 }

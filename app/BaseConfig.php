@@ -10,7 +10,7 @@ class BaseConfig implements WorkflowConfig
     private $model;
 
     /**
-     * @var JustInTimeConfig
+     * @var ApprovalLevelsConfig
      */
     private $workflowConfigGenerator;
 
@@ -21,7 +21,7 @@ class BaseConfig implements WorkflowConfig
     public function __construct($model)
     {
         $this->model = $model;
-        $this->workflowConfigGenerator = new JustInTimeConfig();
+        $this->workflowConfigGenerator = new ApprovalLevelsConfig();
     }
 
     /**

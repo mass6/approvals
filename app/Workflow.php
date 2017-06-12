@@ -120,7 +120,7 @@ class Workflow extends Model
      * @param null   $comment
      * @return Model
      */
-    public function saveApproval(User $user, string $rule, bool $final, bool $approved, $comment = null)
+    public function logApproval(User $user, string $rule, bool $final, bool $approved, $comment = null)
     {
         return $this->approvals()->create([
             'user_id'  => $user->id,
@@ -137,9 +137,9 @@ class Workflow extends Model
      * @param string $comment
      * @return Model
      */
-    public function saveRejection(User $user, string $rule, string $comment)
+    public function logRejection(User $user, string $rule, string $comment)
     {
-        return $this->saveApproval($user, $rule, false, false, $comment);
+        return $this->logApproval($user, $rule, false, false, $comment);
     }
 
     public function deactivate()

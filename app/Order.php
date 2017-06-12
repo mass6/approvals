@@ -50,7 +50,7 @@ class Order extends WorkflowModel
 
     public function afterApprove($model, \Finite\Event\TransitionEvent  $transitionEvent)
     {
-        $this->getWorkflow()->saveApproval(
+        $this->getWorkflow()->logApproval(
             Auth::user(),
             $transitionEvent->getTransition()->getName(),
             $transitionEvent->get('final-approval', false),
@@ -66,12 +66,12 @@ class Order extends WorkflowModel
         $this->restoreStateMachine();
     }
 
-    public function afterReject($model, $event)
+    public function afterReject($model, $transitionEvent)
     {
         $workflow = $this->getWorkflow();
-        $workflow->saveRejection(Auth::user(), $event->get('approval_level'), $event->get('comment'));
+        $workflow->logRejection(Auth::user(), $transitionEvent->get('approval_level'), $transitionEvent->get('comment'));
         $workflow->deactivate();
-        //$this->restoreStateMachine();
+        $this->restoreStateMachine();
     }
 
     /**

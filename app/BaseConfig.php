@@ -31,54 +31,66 @@ class BaseConfig implements WorkflowConfig
      */
     public function getStateMachineConfig()
     {
+        if ($this->model->getWorkflow()) {
+            $workflowConfig = $this->workflowConfigGenerator->generate($this->model);
+            return $this->mergeWorkflowConfig($this->getBaseConfig(), $workflowConfig);
+        } else {
+            return $this->getBaseConfig();
+        }
+    }
 
-        $baseConfig = [
-            'class' => get_class($this->model),
-            'states' => [
-                'draft' => [
-                    'type' => 'initial',
+    /**
+     * @return array
+     */
+    protected function getBaseConfig(): array
+    {
+        return [
+            'class'       => get_class($this->model),
+            'states'      => [
+                'draft'     => [
+                    'type'       => 'initial',
                     'properties' => ['name' => 'draft'],
                 ],
-                'approved' => [
-                    'type' => 'final',
+                'approved'  => [
+                    'type'       => 'final',
                     'properties' => ['name' => 'approved'],
                 ],
                 'cancelled' => [
-                    'type' => 'final',
+                    'type'       => 'final',
                     'properties' => ['name' => 'cancelled'],
                 ]
             ],
             'transitions' => [
-                'cancel' => ['from' => ['draft', 'approved'], 'to' => 'cancelled', 'properties' => []],
+                'cancel'     => ['from' => ['draft', 'approved'], 'to' => 'cancelled', 'properties' => []],
                 'pre-submit' => ['from' => ['draft'], 'to' => 'draft', 'properties' => []],
             ],
-            'callbacks' => [
+            'callbacks'   => [
                 'before' => [
                     ['on' => 'pre-submit', 'do' => [$this->model, 'beforePreSubmit']],
                 ],
-                'after' => [
+                'after'  => [
                     ['on' => 'pre-submit', 'do' => [$this->model, 'afterPreSubmit']],
                     ['on' => 'reject', 'do' => [$this->model, 'afterReject']],
                     ['from' => '', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
                 ],
             ],
         ];
+    }
 
-        if ($this->model->workflows()->count()) {
-            \Log::info('Workflow exists; add approvals to base config');
-            $workflowConfig = $this->workflowConfigGenerator->generate($this->model);
-            $config['class'] = $baseConfig['class'];
-            $config['states'] = array_merge(array_get($baseConfig, 'states', []), array_get($workflowConfig, 'states', []));
-            $config['transitions'] = array_merge(array_get($baseConfig, 'transitions', []), array_get($workflowConfig, 'transitions', []));
-            $config['transitions']['cancel']['from'] = array_merge(array_get($baseConfig, 'transitions.cancel.from', []), array_get($workflowConfig, 'transitions.cancel.from', []));
-            $config['callbacks']['before'] = array_merge(array_get($baseConfig, 'callbacks.before', []), array_get($workflowConfig, 'callbacks.before', []));
-            $config['callbacks']['after'] = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
-
-            // dd($config);
-        } else {
-            \Log::info('No workflow; return base config.');
-            $config = $baseConfig;
-        }
+    /**
+     * @param $baseConfig
+     * @param $workflowConfig
+     * @return mixed
+     */
+    protected function mergeWorkflowConfig($baseConfig, $workflowConfig)
+    {
+        $config = [];
+        $config['class'] = $baseConfig['class'];
+        $config['states'] = array_merge(array_get($baseConfig, 'states', []), array_get($workflowConfig, 'states', []));
+        $config['transitions'] = array_merge(array_get($baseConfig, 'transitions', []), array_get($workflowConfig, 'transitions', []));
+        $config['transitions']['cancel']['from'] = array_merge(array_get($baseConfig, 'transitions.cancel.from', []), array_get($workflowConfig, 'transitions.cancel.from', []));
+        $config['callbacks']['before']           = array_merge(array_get($baseConfig, 'callbacks.before', []), array_get($workflowConfig, 'callbacks.before', []));
+        $config['callbacks']['after']            = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
 
         return $config;
     }

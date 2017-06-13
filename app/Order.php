@@ -39,7 +39,6 @@ class Order extends WorkflowModel
     public function beforePreSubmit()
     {
         $this->createOrderWorkflow();
-        // $this->save();
         $this->restoreStateMachine();
     }
 
@@ -49,7 +48,6 @@ class Order extends WorkflowModel
     public function afterPreSubmit()
     {
         $this->apply('submit');
-        // $this->restoreStateMachine();
     }
 
     public function afterApprove($model, \Finite\Event\TransitionEvent  $transitionEvent)
@@ -61,14 +59,11 @@ class Order extends WorkflowModel
             true,
             $transitionEvent->get('comment', null)
         );
-        //$this->restoreStateMachine();
     }
 
     public function afterFinalApproval($model, \Finite\Event\TransitionEvent  $transitionEvent)
     {
-        \Log::info('Yeah! Order was approved!');
         event('OrderWasFinalApproved');
-        //$this->restoreStateMachine();
     }
 
     public function afterReject($model, $transitionEvent)

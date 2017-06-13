@@ -2,7 +2,7 @@
 
 namespace App;
 
-class LevelBasedWorkflowConfig implements WorkflowConfig
+class WorkflowManager implements WorkflowConfig
 {
     /**
      * @var
@@ -71,7 +71,7 @@ class LevelBasedWorkflowConfig implements WorkflowConfig
                 'after'  => [
                     ['on' => 'pre-submit', 'do' => [$this->model, 'afterPreSubmit']],
                     ['on' => 'reject', 'do' => [$this->model, 'afterReject']],
-                    //['from' => 'all', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
+                    ['from' => 'all', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
                 ],
             ],
         ];

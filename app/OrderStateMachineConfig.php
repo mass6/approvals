@@ -15,7 +15,7 @@ class OrderStateMachineConfig implements WorkflowConfig
     private $model;
 
     /**
-     * @var LevelBasedWorkflowConfig
+     * @var WorkflowManager
      */
     private $workflowConfigGenerator;
 
@@ -26,7 +26,7 @@ class OrderStateMachineConfig implements WorkflowConfig
     public function __construct($model)
     {
         $this->model = $model;
-        $this->workflowConfigGenerator = new LevelBasedWorkflowConfig();
+        $this->workflowConfigGenerator = new WorkflowManager();
     }
 
     /**

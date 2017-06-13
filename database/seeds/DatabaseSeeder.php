@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class DatabaseSeeder extends Seeder
 {
 
-    protected $tables = ['approvals', 'business_rules', 'orders', 'password_resets', 'revisions',
+    protected $tables = ['approvals', 'business_rules', 'orders', 'password_resets', 'revisions', 'transition_events',
                          'users', 'value_rules', 'workflow_definitions', 'workflows'
     ];
     /**

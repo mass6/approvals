@@ -41,7 +41,6 @@ class ApprovalLevelsConfig
             if ($transition === $approvalTransitions->max()) {
                 $to = 'approved';
                 $finalApproval = true;
-                $config['callbacks']['after'][] = ['on' => $transition, 'do' => [$model, 'afterFinalApproval']];
             } else {
                 $to = $approvalStates[$index + 1];
                 $finalApproval = false;

@@ -2,16 +2,18 @@
 
 namespace App;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Venturecraft\Revisionable\RevisionableTrait;
 use Mass6\LaravelStateWorkflows\StateMachineTrait;
+use Mass6\LaravelStateWorkflows\StateAuditingTrait;
 
 abstract class WorkflowModel extends Model
 {
-    use StateMachineTrait, RevisionableTrait;
+    use StateMachineTrait, StateAuditingTrait, RevisionableTrait;
 
     /** @var  WorkflowConfig */
-    protected $stateMachineConfig;
+    protected $workflowManager;
 
     protected $revisionCreationsEnabled = false;
 
@@ -19,17 +21,21 @@ abstract class WorkflowModel extends Model
         'id', 'created_at', 'updated_at'
     ];
 
+    protected $dontKeepTransitionAuditTrailOf = [
+        'pre-submit'
+    ];
+
     public function __construct($attributes = [])
     {
         parent::__construct($attributes);
-        $this->stateMachineConfig = new LevelBasedWorkflowConfig($this);
+        $this->workflowManager = new WorkflowManager($this);
+        $this->initializeWorkflow();
     }
 
     public static function create(array $attributes = [])
     {
         $model = static::query()->create($attributes);
         $model->initializeWorkflow();
-        \Log::info("Order: " . $model->id);
         return $model;
     }
 
@@ -55,12 +61,21 @@ abstract class WorkflowModel extends Model
     public function initializeWorkflow()
     {
         $this->initStateMachine();
+        $this->initAuditTrail([
+            'auditTrailClass' => TransitionEvent::class,
+            'storeAuditTrailOnFirstAfterCallback' => false,
+            'attributes' => [[
+                'user_id' => function () {
+                    return Auth::id();
+                }],
+            ]
+        ]);
         return $this;
     }
 
     public function restoreStateMachine()
     {
-        $this->initStateMachine();
+        $this->initializeWorkflow();
         return $this;
     }
 
@@ -75,7 +90,7 @@ abstract class WorkflowModel extends Model
 
     protected function getStateMachineConfig()
     {
-        return $this->stateMachineConfig->getConfig();
+        return $this->workflowManager->getConfig();
     }
 
     public function getStatus()
@@ -93,6 +108,11 @@ abstract class WorkflowModel extends Model
         return $this->belongsToMany(BusinessRule::class, 'workflows')->withTimestamps();
     }
 
+    public function transitionEvents()
+    {
+        return $this->morphMany(TransitionEvent::class, 'stateful');
+    }
+
     public function workflows()
     {
         return $this->hasMany(Workflow::class);
@@ -101,5 +121,15 @@ abstract class WorkflowModel extends Model
     public function getWorkflow()
     {
         return $this->hasMany(Workflow::class)->whereActive(true)->latest()->first();
+    }
+
+    protected function shouldSaveInitialState() : bool
+    {
+        return false;
+    }
+
+    protected function getExcludedTransitions(): array
+    {
+        return $this->dontKeepTransitionAuditTrailOf;
     }
 }

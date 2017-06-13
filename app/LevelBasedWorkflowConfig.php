@@ -71,7 +71,7 @@ class LevelBasedWorkflowConfig implements WorkflowConfig
                 'after'  => [
                     ['on' => 'pre-submit', 'do' => [$this->model, 'afterPreSubmit']],
                     ['on' => 'reject', 'do' => [$this->model, 'afterReject']],
-                    ['from' => '', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
+                    //['from' => 'all', 'to' => 'approved', 'do' => [$this->model, 'afterFinalApproval']],
                 ],
             ],
         ];

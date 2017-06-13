@@ -17,9 +17,9 @@ class CreateApprovalsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('workflow_id');
             $table->text('rule');
-            $table->boolean('final')->default(false);
             $table->unsignedInteger('user_id');
             $table->boolean('approved');
+            $table->boolean('final')->default(false);
             $table->text('comment')->nullable();
             $table->timestamps();
         });

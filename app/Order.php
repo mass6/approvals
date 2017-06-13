@@ -17,15 +17,20 @@ class Order extends WorkflowModel
      */
     public function createOrderWorkflow()
     {
-        // TODO:: replace with strategy for finding appropriate workflow definition
-        /** @var WorkflowDefinition $workflowDefinition */
-        $workflowDefinition = WorkflowDefinition::latest('id')->first();
-        $this->workflowDefinitions()->attach($workflowDefinition, [
-            'definition' => $workflowDefinition->getDefinition(),
+        $orderValue = $this->total;
+        // TODO:: replace with strategy for finding appropriate business rule
+        $businessRule = BusinessRule::first();
+        $defintition = $businessRule->rules->first(function($rule) use ($orderValue) {
+            if (isset($rule['max_value'])) {
+                return $orderValue >= $rule['min_value'] && $orderValue <= $rule['max_value'];
+            }
+            return $orderValue >= $rule['min_value'];
+        });
+        $this->businessRules()->attach($businessRule, [
+            'config' => $defintition->config,
             'active' => true,
         ]);
-        // event(new OrderCreated($this));
-
+        //event(new OrderCreated($this));
     }
 
     /**
@@ -43,7 +48,6 @@ class Order extends WorkflowModel
      */
     public function afterPreSubmit()
     {
-        \Log::info('Applying Submit');
         $this->apply('submit');
         // $this->restoreStateMachine();
     }
@@ -57,13 +61,14 @@ class Order extends WorkflowModel
             true,
             $transitionEvent->get('comment', null)
         );
-        $this->restoreStateMachine();
+        //$this->restoreStateMachine();
     }
 
-    public function afterFinalApproval(\Finite\Event\TransitionEvent  $transitionEvent)
+    public function afterFinalApproval($model, \Finite\Event\TransitionEvent  $transitionEvent)
     {
+        \Log::info('Yeah! Order was approved!');
         event('OrderWasFinalApproved');
-        $this->restoreStateMachine();
+        //$this->restoreStateMachine();
     }
 
     public function afterReject($model, $transitionEvent)

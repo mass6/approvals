@@ -1,15 +1,16 @@
 <?php
 
 use App\User;
-use App\WorkflowDefinition;
+use App\ValueRule;
+use App\BusinessRule;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
 
-    protected $tables = ['approvals', 'orders', 'password_resets', 'revisions',
-                         'users', 'workflow_definitions', 'workflows'
+    protected $tables = ['approvals', 'business_rules', 'orders', 'password_resets', 'revisions',
+                         'users', 'value_rules', 'workflow_definitions', 'workflows'
     ];
     /**
      * Run the database seeds.
@@ -21,10 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->cleanDatabase();
 
         factory(User::class, 10)->create();
-        factory(WorkflowDefinition::class, 1)->create(['name' => 'basic']);
-        factory(WorkflowDefinition::class, 1)->create(['name' => 'standard']);
-        factory(WorkflowDefinition::class, 1)->create(['name' => 'staged']);
-        //factory(Order::class, 10)->create(['user_id' => $user->id]);
+        $this->call(BusinessRulesSeeder::class);
     }
 
     /**

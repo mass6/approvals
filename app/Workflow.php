@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
  * Class Workflow
  * @package App
  * @property integer $next_approver
- * @property string $definition
  * @property string $config
  * @property-read \App\User $nextApprover
  * @mixin \Eloquent
@@ -44,22 +43,6 @@ class Workflow extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
-    }
-
-    /**
-     * @param string $value
-     */
-    public function setDefinition(string $value)
-    {
-        $this->definition = $value;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDefinition()
-    {
-        return json_decode($this->definition,true);
     }
 
     /**

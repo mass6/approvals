@@ -18,6 +18,7 @@ class CreateOrdersTable extends Migration
             $table->unsignedInteger('user_id');
             $table->string('name');
             $table->string('status')->default('draft');
+            $table->integer('total')->default(0);
             $table->timestamps();
         });
     }

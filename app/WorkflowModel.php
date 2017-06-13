@@ -88,9 +88,9 @@ abstract class WorkflowModel extends Model
         return $this->currentWorkflow()->getNextApprover();
     }
 
-    public function workflowDefinitions()
+    public function businessRules()
     {
-        return $this->belongsToMany(WorkflowDefinition::class, 'workflows')->withTimestamps();
+        return $this->belongsToMany(BusinessRule::class, 'workflows')->withTimestamps();
     }
 
     public function workflows()

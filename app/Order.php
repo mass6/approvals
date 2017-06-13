@@ -74,7 +74,7 @@ class Order extends WorkflowModel
     public function afterReject($model, $transitionEvent)
     {
         $workflow = $this->getWorkflow();
-        $workflow->logRejection(Auth::user(), $transitionEvent->get('approval_level'), $transitionEvent->get('comment'));
+        $workflow->logRejection(Auth::user(), $transitionEvent->get('comment'));
         $workflow->deactivate();
         $this->restoreStateMachine();
     }

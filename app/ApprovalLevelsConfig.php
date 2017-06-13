@@ -12,14 +12,19 @@ class ApprovalLevelsConfig
         $workflowConfig = $model->getWorkflow()->getConfig();
         $approvalLevels = $this->getApprovalLevels($workflowConfig);
 
-        list($approvalStates, $config) = $this->getApprovalStates($approvalLevels);
-
+        $approvalStates = collect([]);
         $approvalTransitions = collect([]);
-        $approvalLevels->each(function($level) use (&$approvalTransitions) {
+        $approvalLevels->each(function($level) use (&$approvalStates, &$approvalTransitions) {
+            $approvalStates->push('pending_' . $level);
             $approvalTransitions->push('approve_' . $level);
         });
 
-
+        $approvalStates->each(function($state) use (&$config) {
+            $config['states'][$state] = [
+                'type' => 'normal',
+                'properties' => ['name' => $state . ' approval'],
+            ];
+        });
 
         $config['transitions']['cancel'] = ['from' => $approvalStates->toArray(), 'to' => 'cancelled', 'properties' => []];
         $config['transitions']['submit'] = ['from' => ['draft'], 'to' => $approvalStates->first(), 'properties' => []];
@@ -28,7 +33,7 @@ class ApprovalLevelsConfig
             'to' => 'draft',
             'properties' => [],
             'configure_properties' => function (OptionsResolver $resolver) {
-                $resolver->setRequired(['approval_level', 'comment']);
+                $resolver->setRequired(['comment']);
             }
         ];
         $approvalTransitions->each(function($transition, $index) use (&$config, $approvalStates, $approvalTransitions, $model) {
@@ -85,26 +90,6 @@ class ApprovalLevelsConfig
             ->flatten();
 
         return $approvalLevels;
-    }
-
-    /**
-     * @param $approvalLevels
-     * @return array
-     */
-    protected function getApprovalStates($approvalLevels): array
-    {
-        $approvalStates = collect([]);
-        $approvalLevels->each(function ($level) use (&$approvalStates) {
-            $approvalStates->push('pending_' . $level);
-        });
-        $approvalStates->each(function ($state) use (&$config) {
-            $config['states'][$state] = [
-                'type'       => 'normal',
-                'properties' => ['name' => $state . ' approval'],
-            ];
-        });
-
-        return $config;
     }
 
 }

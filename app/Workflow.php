@@ -116,13 +116,12 @@ class Workflow extends Model
 
     /**
      * @param User   $user
-     * @param string $rule
      * @param string $comment
      * @return Model
      */
-    public function logRejection(User $user, string $rule, string $comment)
+    public function logRejection(User $user, string $comment)
     {
-        return $this->logApproval($user, $rule, false, false, $comment);
+        return $this->logApproval($user, 'rejected', false, false, $comment);
     }
 
     public function deactivate()

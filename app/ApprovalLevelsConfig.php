@@ -7,9 +7,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ApprovalLevelsConfig
 {
-    public function generate($model)
+    public function generate(WorkflowModel $model)
     {
-        $workflowConfig = $model->getWorkflow()->getConfig();
+        $workflowConfig = $model->getWorkflow()->getDefinition();
         $approvalLevels = $this->getApprovalLevels($workflowConfig);
 
         $approvalStates = collect([]);
@@ -31,13 +31,9 @@ class ApprovalLevelsConfig
         $config['transitions']['reject'] = [
             'from' => $approvalStates->toArray(),
             'to' => 'draft',
-            'properties' => [],
-            'configure_properties' => function (OptionsResolver $resolver) {
-                $resolver->setRequired(['comment']);
-            }
+            'properties' => ['comment' => 'Rejected']
         ];
         $approvalTransitions->each(function($transition, $index) use (&$config, $approvalStates, $approvalTransitions, $model) {
-
             if ($transition === $approvalTransitions->max()) {
                 $to = 'approved';
                 $finalApproval = true;
@@ -58,15 +54,13 @@ class ApprovalLevelsConfig
             $config['callbacks']['after'][] = ['on' => $transition, 'do' => [$model, 'afterApprove']];
         });
 
-
         return $config;
     }
 
 
     protected function getDefinition($model)
     {
-        //return collect(config('workflows.staged'));
-        return $model->getWorkflow()->getConfig();
+        return $model->getWorkflow()->getDefinition();
     }
 
     /**

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @package App
  * @property integer $next_approver
  * @property string $config
+ * @property string $definition
  * @property-read \App\User $nextApprover
  * @mixin \Eloquent
  */
@@ -24,6 +25,14 @@ class Workflow extends Model
      */
     protected $guarded = [];
     protected $casts = ['active' => 'boolean'];
+
+    public function setWorkflowConfig()
+    {
+        $workflowGenerator = new ApprovalLevelsConfig();
+        $workflowConfig = $workflowGenerator->generate($this->order);
+        $this->setConfig(json_encode($workflowConfig));
+        $this->save();
+    }
     
     /**
      * @param User $user
@@ -59,6 +68,22 @@ class Workflow extends Model
     public function setConfig(string $config)
     {
         $this->config = $config;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefinition()
+    {
+        return json_decode($this->definition,true);
+    }
+
+    /**
+     * @param string $definition
+     */
+    public function setDefinition(string $definition)
+    {
+        $this->definition = $definition;
     }
 
     /**

@@ -17,6 +17,7 @@ class CreateWorkflowsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('order_id');
             $table->unsignedInteger('business_rule_id');
+            $table->text('definition')->nullable();
             $table->text('config')->nullable();
             $table->boolean('active');
             $table->unsignedInteger('next_approver')->nullable();

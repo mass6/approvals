@@ -10,18 +10,12 @@ class WorkflowManager implements WorkflowConfig
     private $model;
 
     /**
-     * @var ApprovalLevelsConfig
-     */
-    private $workflowConfigGenerator;
-
-    /**
      * OrderStateMachineConfig constructor.
      * @param $model
      */
-    public function __construct($model)
+    public function __construct(WorkflowModel $model)
     {
         $this->model = $model;
-        $this->workflowConfigGenerator = new ApprovalLevelsConfig();
     }
 
     /**
@@ -31,9 +25,8 @@ class WorkflowManager implements WorkflowConfig
      */
     public function getConfig()
     {
-        if ($this->model->getWorkflow()) {
-            $workflowConfig = $this->workflowConfigGenerator->generate($this->model);
-            return $this->mergeWorkflowConfig($this->getBaseConfig(), $workflowConfig);
+        if ($this->model->getWorkflowConfig()) {
+            return $this->mergeWorkflowConfig($this->getBaseConfig(), $this->getWorkflowConfig());
         } else {
             return $this->getBaseConfig();
         }
@@ -93,5 +86,13 @@ class WorkflowManager implements WorkflowConfig
         $config['callbacks']['after']            = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
 
         return $config;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getWorkflowConfig()
+    {
+        return $this->model->getWorkflowConfig();
     }
 }

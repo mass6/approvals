@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Venturecraft\Revisionable\RevisionableTrait;
@@ -118,9 +119,19 @@ abstract class WorkflowModel extends Model
         return $this->hasMany(Workflow::class);
     }
 
+    /**
+     * @return Workflow|null
+     */
     public function getWorkflow()
     {
         return $this->hasMany(Workflow::class)->whereActive(true)->latest()->first();
+    }
+
+    public function getWorkflowConfig()
+    {
+        if ($this->getWorkflow()) {
+            return $this->getWorkflow()->getConfig();
+        }
     }
 
     protected function shouldSaveInitialState() : bool

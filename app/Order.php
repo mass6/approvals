@@ -27,9 +27,11 @@ class Order extends WorkflowModel
             return $orderValue >= $rule['min_value'];
         });
         $this->businessRules()->attach($businessRule, [
-            'config' => $defintition->config,
+            'definition' => $defintition->config,
+            'config' => '',
             'active' => true,
         ]);
+        $this->getWorkflow()->setWorkflowConfig();
         //event(new OrderCreated($this));
     }
 

@@ -916,16 +916,16 @@
         },
         {
             "name": "mass6/laravel-state-workflows",
-            "version": "v1.5",
+            "version": "v1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mass6/laravel-state-workflows.git",
-                "reference": "a8a1e11d9eee60f95e7c78a1fd5a1f2b153415f7"
+                "reference": "3557886fb3bf7d137da7bf1515c1856339415a1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mass6/laravel-state-workflows/zipball/a8a1e11d9eee60f95e7c78a1fd5a1f2b153415f7",
-                "reference": "a8a1e11d9eee60f95e7c78a1fd5a1f2b153415f7",
+                "url": "https://api.github.com/repos/mass6/laravel-state-workflows/zipball/3557886fb3bf7d137da7bf1515c1856339415a1f",
+                "reference": "3557886fb3bf7d137da7bf1515c1856339415a1f",
                 "shasum": ""
             },
             "require": {
@@ -962,7 +962,7 @@
                 "transition",
                 "workflow"
             ],
-            "time": "2017-06-04 13:11:07"
+            "time": "2017-06-14 06:09:56"
         },
         {
             "name": "monolog/monolog",

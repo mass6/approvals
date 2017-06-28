@@ -7,9 +7,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ApprovalLevelsConfig
 {
-    public function generate(WorkflowModel $model)
+    public function generate(WorkflowModel $model, $definition)
     {
-        $workflowConfig = $model->getWorkflow()->getDefinition();
+        $workflowConfig = $definition;
         $approvalLevels = $this->getApprovalLevels($workflowConfig);
 
         $approvalStates = collect([]);
@@ -31,7 +31,10 @@ class ApprovalLevelsConfig
         $config['transitions']['reject'] = [
             'from' => $approvalStates->toArray(),
             'to' => 'draft',
-            'properties' => ['comment' => 'Rejected']
+            'properties' => [],
+            'configure_properties' => function (OptionsResolver $resolver) {
+                $resolver->setRequired(['comment']);
+            }
         ];
         $approvalTransitions->each(function($transition, $index) use (&$config, $approvalStates, $approvalTransitions, $model) {
             if ($transition === $approvalTransitions->max()) {

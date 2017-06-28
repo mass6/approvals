@@ -39,6 +39,7 @@ class WorkflowManager implements WorkflowConfig
     {
         return [
             'class'       => get_class($this->model),
+            'stateColumn' => 'status',
             'states'      => [
                 'draft'     => [
                     'type'       => 'initial',

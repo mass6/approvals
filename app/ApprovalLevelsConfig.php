@@ -7,9 +7,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ApprovalLevelsConfig
 {
-    public function generate(WorkflowModel $model, $definition)
+    public function generate(WorkflowModel $model)
     {
-        $workflowConfig = $definition;
+        $workflowConfig = $model->getWorkflowDefinition();
         $approvalLevels = $this->getApprovalLevels($workflowConfig);
 
         $approvalStates = collect([]);
@@ -87,5 +87,4 @@ class ApprovalLevelsConfig
 
         return $approvalLevels;
     }
-
 }

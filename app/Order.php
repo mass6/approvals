@@ -12,7 +12,6 @@ class Order extends WorkflowModel
 {
     use StateMachineTrait, StateAuditingTrait, RevisionableTrait;
 
-    /** @var  WorkflowConfig */
     protected $workflowManager;
     protected $guarded = [];
     protected $revisionCreationsEnabled = false;
@@ -73,61 +72,7 @@ class Order extends WorkflowModel
 
     protected function getStateMachineConfig()
     {
-        if ($definition = $this->getWorkflowDefinition()) {
-            return $this->getWorkflowConfig($definition);
-        } else {
-            return $this->getBaseConfig();
-        }
-    }
-
-    protected function mergeWorkflowConfig($workflowConfig)
-    {
-        $baseConfig =  $this->getBaseConfig();
-        $config = [];
-        $config['class'] = $baseConfig['class'];
-        $config['states'] = array_merge(array_get($baseConfig, 'states', []), array_get($workflowConfig, 'states', []));
-        $config['transitions'] = array_merge(array_get($baseConfig, 'transitions', []), array_get($workflowConfig, 'transitions', []));
-        $config['transitions']['cancel']['from'] = array_merge(array_get($baseConfig, 'transitions.cancel.from', []), array_get($workflowConfig, 'transitions.cancel.from', []));
-        $config['callbacks']['before']           = array_merge(array_get($baseConfig, 'callbacks.before', []), array_get($workflowConfig, 'callbacks.before', []));
-        $config['callbacks']['after']            = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
-
-        return $config;
-    }
-
-    protected function getBaseConfig(): array
-    {
-        return [
-            'class'       => get_class($this),
-            'stateColumn' => 'status',
-            'states'      => [
-                'draft'     => [
-                    'type'       => 'initial',
-                    'properties' => ['name' => 'draft'],
-                ],
-                'approved'  => [
-                    'type'       => 'final',
-                    'properties' => ['name' => 'approved'],
-                ],
-                'cancelled' => [
-                    'type'       => 'final',
-                    'properties' => ['name' => 'cancelled'],
-                ]
-            ],
-            'transitions' => [
-                'cancel'     => ['from' => ['draft', 'approved'], 'to' => 'cancelled', 'properties' => []],
-                'pre-submit' => ['from' => ['draft'], 'to' => 'draft', 'properties' => []],
-            ],
-            'callbacks'   => [
-                'before' => [
-                    ['on' => 'pre-submit', 'do' => [$this, 'beforePreSubmit']],
-                ],
-                'after'  => [
-                    ['on' => 'pre-submit', 'do' => [$this, 'afterPreSubmit']],
-                    ['on' => 'reject', 'do' => [$this, 'afterReject']],
-                    ['from' => 'all', 'to' => 'approved', 'do' => [$this, 'afterFinalApproval']],
-                ],
-            ],
-        ];
+        return $this->workflowManager->getConfig();
     }
 
     public function restoreStateMachine()
@@ -176,14 +121,6 @@ class Order extends WorkflowModel
         }
     }
 
-    public function getWorkflowConfig($definition)
-    {
-        $workflowGenerator = new ApprovalLevelsConfig();
-        $workflowConfig = $workflowGenerator->generate($this, $definition);
-
-        return $this->mergeWorkflowConfig($workflowConfig);
-    }
-
     protected function shouldSaveInitialState() : bool
     {
         return false;
@@ -196,7 +133,7 @@ class Order extends WorkflowModel
     /**
      *
      */
-    public function createOrderWorkflow()
+    public function attachBusinessRules()
     {
         $orderValue = $this->total;
         // TODO:: replace with strategy for finding appropriate business rule
@@ -212,8 +149,6 @@ class Order extends WorkflowModel
             'config' => '',
             'active' => true,
         ]);
-        // $this->getWorkflow()->setWorkflowConfig();
-        //event(new OrderCreated($this));
     }
 
     /**
@@ -221,7 +156,7 @@ class Order extends WorkflowModel
      */
     public function beforePreSubmit()
     {
-        $this->createOrderWorkflow();
+        $this->attachBusinessRules();
         $this->restoreStateMachine();
     }
 

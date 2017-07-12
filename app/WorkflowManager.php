@@ -2,22 +2,19 @@
 
 namespace App;
 
-class WorkflowManager implements WorkflowConfig
+class WorkflowManager
 {
+
     /**
-     * @var
+     * @var WorkflowModel
      */
     private $model;
 
-    /**
-     * OrderStateMachineConfig constructor.
-     * @param $model
-     */
+
     public function __construct(WorkflowModel $model)
     {
         $this->model = $model;
     }
-
     /**
      * Return the state machine configuration
      *
@@ -25,11 +22,19 @@ class WorkflowManager implements WorkflowConfig
      */
     public function getConfig()
     {
-        if ($this->model->getWorkflowConfig()) {
-            return $this->mergeWorkflowConfig($this->getBaseConfig(), $this->getWorkflowConfig());
-        } else {
-            return $this->getBaseConfig();
+        if ($this->model->getWorkflowDefinition()) {
+            return $this->getWorkflowConfig();
         }
+
+        return $this->getBaseConfig();
+    }
+
+    public function getWorkflowConfig()
+    {
+        $workflowGenerator = new ApprovalLevelsConfig();
+        $workflowConfig = $workflowGenerator->generate($this->model);
+
+        return $this->mergeWorkflowConfig($workflowConfig);
     }
 
     /**
@@ -72,12 +77,12 @@ class WorkflowManager implements WorkflowConfig
     }
 
     /**
-     * @param $baseConfig
      * @param $workflowConfig
      * @return mixed
      */
-    protected function mergeWorkflowConfig($baseConfig, $workflowConfig)
+    protected function mergeWorkflowConfig($workflowConfig)
     {
+        $baseConfig = $this->getBaseConfig();
         $config = [];
         $config['class'] = $baseConfig['class'];
         $config['states'] = array_merge(array_get($baseConfig, 'states', []), array_get($workflowConfig, 'states', []));
@@ -87,13 +92,5 @@ class WorkflowManager implements WorkflowConfig
         $config['callbacks']['after']            = array_merge(array_get($baseConfig, 'callbacks.after', []), array_get($workflowConfig, 'callbacks.after', []));
 
         return $config;
-    }
-
-    /**
-     * @return array
-     */
-    protected function getWorkflowConfig()
-    {
-        return $this->model->getWorkflowConfig();
     }
 }

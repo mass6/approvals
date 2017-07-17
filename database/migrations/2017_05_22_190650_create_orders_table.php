@@ -17,7 +17,8 @@ class CreateOrdersTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('user_id');
             $table->string('name');
-            $table->string('status')->default('DRA');
+            $table->string('status')->default('draft');
+            $table->integer('total')->default(0);
             $table->timestamps();
         });
     }

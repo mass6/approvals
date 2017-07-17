@@ -39,15 +39,15 @@ class WorkflowFactory
      */
     public function initializeWorkflow(StateMachine $sm)
     {
-        $factory = new LevelBasedWorkflowFactory();
+        $factory = new LevelBasedWorkflowParser();
 
         return $factory->initializeWorkflow($sm, $this->model);
 
 
         if ($this->model->getState() === 'PND') {
             $nextState = 'PND';
-            $config = $this->model->getWorkflow()->getConfig();
-            $levels = collect($config['levels'])->keyBy('name')->map(function($l) {
+            $workflowDefinition = $this->model->getWorkflow()->getDefinition();
+            $levels = collect($workflowDefinition['levels'])->keyBy('name')->map(function($l) {
                 return collect(range(1, $l['signatories']))->map(function($s,$i) use ($l) {
                     return $l['level'] . '.' . ($i + 1);
                 });
@@ -85,10 +85,9 @@ class WorkflowFactory
      */
     protected function getApprovalLevels()
     {
-        $config = $this->model->getWorkflow()->getConfig();
-        $levels = collect($config['levels']);
+        $workflowDefinition = $this->model->getWorkflow()->getDefinition();
 
-
+        return collect($workflowDefinition['levels']);
     }
 
     /**
@@ -102,10 +101,10 @@ class WorkflowFactory
     /**
      *
      */
-    public function getConfig()
+    public function getDefinition()
     {
-        $config = json_decode($this->model->getWorkflow()->getConfig(), true);
+        $workflowDefinition = json_decode($this->model->getWorkflow()->getDefinition(), true);
 
-        $levels = collect($config['levels']);
+        return collect($workflowDefinition);
     }
 }

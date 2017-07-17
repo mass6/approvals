@@ -17,6 +17,6 @@ class StateMachineListener
      */
     public function handle()
     {
-        \Log::info('State Machine Listener');
+        \Log::info('Order was final approved!');
     }
 }

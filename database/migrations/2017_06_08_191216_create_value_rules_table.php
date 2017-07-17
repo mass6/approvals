@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateWorkflowsTable extends Migration
+class CreateValueRulesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,14 +13,14 @@ class CreateWorkflowsTable extends Migration
      */
     public function up()
     {
-        Schema::create('workflows', function (Blueprint $table) {
+        Schema::create('value_rules', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('order_id');
+            $table->string('name');
             $table->unsignedInteger('business_rule_id');
-            $table->text('definition')->nullable();
+            $table->integer('min_value')->nullable();
+            $table->integer('max_value')->nullable();
+            $table->text('definition');
             $table->text('config')->nullable();
-            $table->boolean('active');
-            $table->unsignedInteger('next_approver')->nullable();
             $table->timestamps();
         });
     }
@@ -32,6 +32,6 @@ class CreateWorkflowsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('workflows');
+        Schema::dropIfExists('value_rules');
     }
 }

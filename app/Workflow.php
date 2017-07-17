@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @package App
  * @property integer $next_approver
  * @property string $config
+ * @property string $definition
  * @property-read \App\User $nextApprover
  * @mixin \Eloquent
  */
@@ -23,6 +24,15 @@ class Workflow extends Model
      * @var array
      */
     protected $guarded = [];
+    protected $casts = ['active' => 'boolean'];
+
+    public function setWorkflowConfig()
+    {
+        $workflowGenerator = new ApprovalLevelsConfig();
+        $workflowConfig = $workflowGenerator->generate($this->order);
+        $this->setConfig(json_encode($workflowConfig));
+        $this->save();
+    }
     
     /**
      * @param User $user
@@ -61,6 +71,22 @@ class Workflow extends Model
     }
 
     /**
+     * @return string
+     */
+    public function getDefinition()
+    {
+        return json_decode($this->definition,true);
+    }
+
+    /**
+     * @param string $definition
+     */
+    public function setDefinition(string $definition)
+    {
+        $this->definition = $definition;
+    }
+
+    /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function workflowDefinition()
@@ -86,8 +112,6 @@ class Workflow extends Model
 
 
     /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function approvals()
@@ -97,22 +121,39 @@ class Workflow extends Model
 
 
     /**
-     * @author Sam Ciaramilaro <sam.ciaramilaro@tattoodo.com>
-     *
-     * @param \Finite\Event\TransitionEvent $transitionEvent
-     * @param User                          $user
+     * @param User   $user
+     * @param string $rule
+     * @param bool   $final
+     * @param bool   $approved
+     * @param null   $comment
      * @return Model
      */
-    public function saveApproval(\Finite\Event\TransitionEvent $transitionEvent, User $user)
+    public function logApproval(User $user, string $rule, bool $final, bool $approved, $comment = null)
     {
-        $rule = $transitionEvent->getTransition()->getName();
-
         return $this->approvals()->create([
             'user_id'  => $user->id,
             'rule'     => $rule,
-            'approved' => true,
+            'final'    => $final,
+            'approved' => $approved,
+            'comment'  => $comment
         ]);
     }
 
+    /**
+     * @param User   $user
+     * @param string $comment
+     * @return Model
+     */
+    public function logRejection(User $user, string $comment)
+    {
+        return $this->logApproval($user, 'rejected', false, false, $comment);
+    }
 
+    public function deactivate()
+    {
+        $this->active = false;
+        $this->save();
+
+        return $this;
+    }
 }

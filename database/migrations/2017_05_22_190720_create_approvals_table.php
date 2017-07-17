@@ -19,6 +19,7 @@ class CreateApprovalsTable extends Migration
             $table->text('rule');
             $table->unsignedInteger('user_id');
             $table->boolean('approved');
+            $table->boolean('final')->default(false);
             $table->text('comment')->nullable();
             $table->timestamps();
         });

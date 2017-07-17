@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateWorkflowDefinitionsTable extends Migration
+class CreateBusinessRulesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,10 @@ class CreateWorkflowDefinitionsTable extends Migration
      */
     public function up()
     {
-        Schema::create('workflow_definitions', function (Blueprint $table) {
+        Schema::create('business_rules', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
-            $table->text('definition');
-            $table->text('config')->nullable();
+            $table->string('type');
             $table->timestamps();
         });
     }
@@ -29,6 +28,6 @@ class CreateWorkflowDefinitionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('workflow_definitions');
+        Schema::dropIfExists('business_rules');
     }
 }

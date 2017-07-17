@@ -26,4 +26,3 @@ class TransitionEvent extends Model
         return $this->morphTo();
     }
 }
-

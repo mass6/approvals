@@ -20,14 +20,14 @@ class Order extends WorkflowModel
         $orderValue = $this->total;
         // TODO:: replace with strategy for finding appropriate business rule
         $businessRule = BusinessRule::first();
-        $defintition = $businessRule->rules->first(function($rule) use ($orderValue) {
+        $definition = $businessRule->rules->first(function($rule) use ($orderValue) {
             if (isset($rule['max_value'])) {
                 return $orderValue >= $rule['min_value'] && $orderValue <= $rule['max_value'];
             }
             return $orderValue >= $rule['min_value'];
         });
         $this->businessRules()->attach($businessRule, [
-            'definition' => $defintition->config,
+            'definition' => $definition->config,
             'config' => '',
             'active' => true,
         ]);

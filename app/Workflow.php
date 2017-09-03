@@ -55,11 +55,16 @@ class Workflow extends Model
     }
 
     /**
+     * @param Model $model
      * @return string
      */
-    public function getConfig()
+    public function getConfig(Model $model)
     {
-        return json_decode($this->config,true);
+        $config = json_decode($this->config,true);
+        if($config) {
+            $config = $this->restoreCallbacks($model, $config);
+            return $config;
+        }
     }
 
     /**
@@ -155,5 +160,29 @@ class Workflow extends Model
         $this->save();
 
         return $this;
+    }
+
+    /**
+     * @param Model $model
+     * @param       $config
+     * @return mixed
+     */
+    protected function restoreCallbacks(Model $model, $config)
+    {
+        $config['callbacks']['after'] = collect($config['callbacks']['after'])->map(function($callback, $key) use ($model) {
+            if (substr($callback['on'], 0, 7) === 'approve') {
+                return [
+                    'on' => $callback['on'],
+                    'do' => [$model, $callback['do'][1]]
+                ];
+            }
+            return $callback;
+        })->toArray();
+        //dd($config);
+        //
+        //$config['callbacks']['after'] = $callbacks;
+        //
+        //dd($config);
+        return $config;
     }
 }

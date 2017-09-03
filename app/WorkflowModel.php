@@ -2,7 +2,6 @@
 
 namespace App;
 
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Venturecraft\Revisionable\RevisionableTrait;
@@ -80,14 +79,15 @@ abstract class WorkflowModel extends Model
         return $this;
     }
 
-    public static function getStateMachineModel($id)
-    {
-        $model = static::where('id', $id)->first();
-        if ($model) {
-            return $model->setStateMachineApprovals();
-        }
-        return $model;
-    }
+    // Commented out for debugging to see if still in use/needed
+    //public static function getStateMachineModel($id)
+    //{
+    //    $model = static::where('id', $id)->first();
+    //    if ($model) {
+    //        return $model->setStateMachineApprovals();
+    //    }
+    //    return $model;
+    //}
 
     protected function getStateMachineConfig()
     {
@@ -130,7 +130,7 @@ abstract class WorkflowModel extends Model
     public function getWorkflowConfig()
     {
         if ($this->getWorkflow()) {
-            return $this->getWorkflow()->getConfig();
+            return $this->getWorkflow()->getConfig($this);
         }
     }
 
